@@ -28,7 +28,7 @@ CampusPark helps a driver choose a valid lot and request a place in an approved 
 
 The current code is a walking skeleton for `UC.1 Driver Finds and Reserves Campus Parking`. It uses permit and map fixtures. Bookings live in memory and vanish on restart. It has no sensors, cameras, plate readers, gates, payments, or parking enforcement. It does not change university permit policy.
 
-The skeleton filters by permit type, ranks by walk time and then remaining recorded capacity, and rechecks at booking. It counts only bookings with exactly the same window string. It does not yet handle overlapping time intervals, repeat-request IDs, cancellations, administrative updates, outage recovery, or AI replies. It does not prove the proposed driver, access, data-protection, or field-pilot outcomes.
+The skeleton filters by permit type, ranks by walk time and then remaining recorded capacity, and rechecks at booking. Bookings are same-day half-open intervals in minutes, and remaining capacity is the configured places minus the most bookings held at any one moment in the requested period. It does not yet handle dates, repeat-request IDs, cancellations, administrative updates, outage recovery, or AI replies. It does not prove the proposed driver, access, data-protection, or field-pilot outcomes.
 
 ### Existing UC.1 path
 
@@ -45,18 +45,18 @@ The skeleton filters by permit type, ranks by walk time and then remaining recor
 | 9 | CampusPark returns confirmation and guidance | UC.1.9; ORD 5.1.2.5 and 5.1.2.16 |
 | 10 | The driver reviews confirmation and guidance | UC.1.10 |
 
-Step 8 repeats the checks because conditions can change after a search. The current model clarifies full-period capacity and repeat-request behavior; the current skeleton's exact-window count does not implement that full outcome.
+Step 8 repeats the checks because conditions can change after a search. The current model clarifies full-period capacity and repeat-request behavior. The skeleton now counts overlapping same-day bookings over the full requested period, but it still has no dates, repeat-request IDs, or competing-request handling, so it does not implement that full outcome.
 
 ### Existing components
 
 | Component | Current duty and source | Open work |
 | --- | --- | --- |
-| `api/eligibility.py` | Filters lots by permit type and repeats the same check before booking; UC.1.2 and UC.1.8; ORD 5.1.4.1 and 5.1.1.2 | Approved time rules and unknown or unavailable eligibility cases under SR.2 and SR.15 |
-| `api/ranking.py` | Orders permitted lots by fixture walk time, then remaining capacity; UC.1.6 | The order is a placeholder. No new ranking weight is approved by this specification. SR.1 and SR.3 measure the result and explanation. |
-| `api/reservations.py` | Holds a record in memory and reports remaining capacity for an exact window; UC.1.8 and UC.1.9; ORD 5.1.2.6 | Full-period overlap, competing requests, repeat IDs, cancellation, complete confirmation, and record summaries |
-| `integrations/permit/client.py` | Reads a permit fixture; it does not write to X.C.3 | Live source access, complete rule fields, and agreed failure meanings |
-| `integrations/map/client.py` | Reads lot fixtures and makes a route sentence; it does not write to X.C.4 | Approved lot addresses, route records, source age, missing estimates, and route-only failure |
-| `web/` | Shows the trip form, option list, and confirmation | Complete required fields, clear failure messages, and keyboard and screen-reader review |
+| `api/eligibility.py` | Filters lots by permit type and repeats the same check before booking; UC.1.2 and UC.1.8; ORD 5.1.4.1 and 5.1.1.2 | Approved time rules and unavailable eligibility cases under SR.2 and SR.15 |
+| `api/ranking.py` | Orders permitted lots by fixture walk time, then remaining capacity; lots with no walk estimate go last; UC.1.6 | The order is a placeholder. No new ranking weight is approved by this specification. SR.1 and SR.3 measure the result and explanation. |
+| `api/reservations.py` | Holds a record in memory and reports remaining capacity as configured places minus the peak number held during the requested same-day period; UC.1.8 and UC.1.9; ORD 5.1.2.6 | Dates, competing requests, repeat IDs, cancellation, complete confirmation, and record summaries |
+| `integrations/permit/client.py` | Reads a permit fixture; returns no profile for a blank or unknown ID; it does not write to X.C.3 | Live source access, complete rule fields, and agreed failure meanings |
+| `integrations/map/client.py` | Reads lot fixtures and makes a route sentence; returns no walk estimate for an unlisted destination; it does not write to X.C.4 | Approved lot addresses, route records, source age, and route-only failure |
+| `web/` | Shows the trip form, option list with estimates and capacity basis labelled, and confirmation with the booked period | Complete required fields, remaining failure messages, and keyboard and screen-reader review |
 
 ## Needs and Acceptance Criteria
 
@@ -515,27 +515,28 @@ This section describes the checked repository code. The types below describe its
 
 | Source and call | Fields and types | Units and current values | Refresh cadence |
 | --- | --- | --- | --- |
-| Driver request: `OptionsRequest` in `api/main.py` | `driver_id`: string; `destination`: string; `arrival`: string; `hours`: integer | Identity reference; destination label; default arrival `09:00`; duration in hours, default 2 | Submitted on every options or reservation request |
+| Driver request: `OptionsRequest` in `api/main.py` | `driver_id`: string; `destination`: string; `arrival`: string matching 24-hour `HH:MM`; `hours`: integer, at least 1. All four are required. | Identity reference; destination label; arrival clock time on an undated day; duration in hours | Submitted on every options or reservation request |
 | Reservation request: `ReserveRequest` | All `OptionsRequest` fields plus `lot_id`: string | Fixture lot identifier | Submitted for each booking attempt |
 | Permit fixture: `permit_client.validate(driver_id)` | `driver_id`: string; `name`: string; `permit`: string | Identity reference; sample display name; permit value `student`, `staff`, or `visitor` | Read at each options request and again at each reservation request; fixtures change only when their file changes |
 | Map fixture: `map_client.LOTS` | `id`: string; `name`: string; `permits`: list of strings; `capacity`: integer; `walk_minutes`: object from destination string to integer | Lot ID and label; allowed permit types; places; estimated walk minutes | Read at each options and reservation request; fixtures change only when their file changes |
-| Candidate map view: `lots_near(destination)` | Same lot fields; `walk_minutes` becomes one integer | Estimated minutes for that destination | Built again on each call |
+| Candidate map view: `lots_near(destination)` | Same lot fields; `walk_minutes` becomes one integer, or null when the fixture has no estimate for that destination | Estimated minutes for that destination | Built again on each call |
 | Destination list: `/api/destinations` | `destinations`: list of strings | `Duffield Hall`, `Statler Hotel`, `Vet School` | Loaded by the page on opening |
-| Internal booking record: `api/reservations.py` | `id`, `driver_id`, `lot_id`, `lot_name`, `destination`, `window`: strings | `id` is an 8-character UUID prefix; `window` is a label such as `09:00+2h`, not a date-time interval | Added on a successful booking; kept only in process memory |
-| Ranking output: `ranking.rank(...)` | Candidate lot fields plus `remaining`: integer | Configured places minus bookings with the same lot ID and exact window label | Recomputed during each options request and booking check |
-| Options response: `/api/options` | `permit`: string; `options`: list of objects with `lot_id`, `name`: strings, `walk_minutes`, `remaining`: integers | Lot label, estimated walk minutes, remaining recorded places | Returned for each request |
-| Reservation response: `/api/reserve` | `confirmation`, `lot`, `guidance`, `note`: strings | Record ID, lot name, fixture route sentence, and record-limit note | Returned after each successful booking |
-| Error response from the explicit failure branches | `error`: string | A fixed user message | Returned when the current code detects an unknown driver, absent lot, denied permit, or full exact-window pool |
+| Internal booking record: `api/reservations.py` | `id`, `driver_id`, `lot_id`, `lot_name`, `destination`, `start`, `end`: strings; `start_min`, `end_min`: integers | `id` is an 8-character UUID prefix; `start_min` and `end_min` are minutes since midnight forming a half-open interval; `start` and `end` are clock labels, with `next day` added past midnight | Added on a successful booking; kept only in process memory |
+| Ranking output: `ranking.rank(...)` | Candidate lot fields plus `remaining`: integer | Configured places minus the peak number of bookings held at one moment in the requested period for the same lot | Recomputed during each options request and booking check |
+| Options response: `/api/options` | `permit`, `start`, `end`, `capacity_basis`: strings; `options`: list of objects with `lot_id`, `name`: strings, `walk_minutes`: integer or null, `remaining`, `capacity`: integers | Lot label, estimated walk minutes or null, remaining recorded places out of configured places, and a fixed note that places come from booking records | Returned for each request |
+| Reservation response: `/api/reserve` | `confirmation`, `lot`, `start`, `end`, `guidance`, `note`: strings | Record ID, lot name, booked period, fixture route sentence, and record-limit note | Returned after each successful booking |
+| Error response from the explicit failure branches | `error`: string | A fixed user message | Returned when the current code finds a blank or unknown driver, an absent lot, a denied permit, or a pool with no place left for the whole period |
+| Validation response from FastAPI | `detail`: list | Pydantic field errors, HTTP 422 | Returned when a required field is missing, `arrival` is not `HH:MM`, or `hours` is below 1 |
 
-The current API request fields have defaults: `student01`, `Duffield Hall`, `09:00`, and 2 hours. The web form sets a 1–8 hour range, but the API model has no matching range constraint. The API treats `arrival` as a string; it does not check a date, time zone, booked end time, or rule period. Do not treat those defaults or missing checks as approved requirements.
+The API request fields have no defaults. The web form uses a time picker and sets a minimum of one hour; neither the form nor the API sets an upper limit, because no limit has been approved. The API checks the clock format and that the stay ends after it starts; it does not check a date, time zone, or rule period. Do not treat the current checks or the lack of an upper limit as approved requirements.
 
 ### Current null, missing-value, and failure behavior
 
-- The permit fixture returns the student profile when its direct function input is empty. A nonempty unknown ID returns `None`; the API then returns a fixed error. The empty-ID default is not an approved unknown-rights policy and must be reviewed under SR.2 and SR.15.
-- An unknown destination receives a 15-minute walk value in `lots_near`. That is a fixture default, not an approved estimate or a missing-value label. SR.3 still requires missing facts to be marked unavailable and estimates to be marked as estimates.
-- The current fixture functions have no live timeout path or source-status record. Missing required lot or profile dictionary keys can raise an error. Malformed request types can be rejected by FastAPI/Pydantic; there is no full contract-specific error screen.
+- The permit fixture returns `None` for a blank, whitespace-only, or unknown ID, and the API then returns a fixed error with no options and no booking. An earlier version gave a blank ID the student profile; that was removed because it handed out rights the permit source had not confirmed. This is not yet the full SR.15 outcome, which also covers timeouts and missing capacity.
+- An unlisted destination gets `walk_minutes: null`. The page shows "walk time unavailable", ranks those lots after lots with an estimate, and labels every walk time it does show as an estimate. An earlier version filled in 15 minutes. These labels are a start on SR.3, not a reviewed summary.
+- The current fixture functions have no live timeout path or source-status record. Missing required lot or profile dictionary keys can raise an error. Missing or malformed request fields get an HTTP 422 from FastAPI; the page turns that into a short form message, and any other non-200 response into a message that nothing was booked.
 - The booking store has no unavailable-source signal, stored status, or repeat-request ID. A restart clears it. `all_reservations()` returns a copy of the list. It is not a physical occupancy source.
-- Route guidance is a string built from the lot label and fixture walk minutes. No route-only outage branch exists. A route error after saving a booking is not yet handled as SR.16 requires.
+- Route guidance is a string built from the lot label and fixture walk minutes, and says so when no walk time is known. No route-only outage branch exists. A route error after saving a booking is not yet handled as SR.16 requires.
 - The permit fixture has a sample `name`; the current API does not return it. The booking store still keeps `lot_name` and `destination` in addition to other fields. These current records are not proof of the proposed closed stored-data list under SR.13.
 
 ### Planned contract needed for the stakeholder requirements
@@ -616,6 +617,8 @@ python -m pytest tests/ -v
 ```
 
 The coverage check verifies that all 13 needs, 18 requirements, 20 saved trace pairs, and 20 test names are represented, and that each acceptance criterion appears in this canonical file. A passing coverage check does not mean the acceptance criteria pass.
+
+`tests/test_skeleton.py` holds developer tests for the walking skeleton. They check that the code does what its own docstrings say, such as refusing an unconfirmed identity or an overlapping booking in a full pool. They are kept out of `test_spec_acceptance.py` on purpose: the coverage check expects that file to hold exactly the 20 named tests, and a passing developer test is not acceptance evidence for any SR. Install `requirements.txt` as well as `requirements-dev.txt` before running them, because they start the FastAPI app.
 
 The GitHub workflow must run this suite on every push and pull request. The intended Chapter 3 result is a red acceptance check with the named placeholder failures. Import errors, missing dependencies, and workflow setup errors are not evidence of an unmet acceptance criterion. Save the commit ID and the actual CI run link and result in the product-build record after pushing. Do not write a successful or failed run claim before observing it.
 

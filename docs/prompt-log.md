@@ -116,3 +116,79 @@ requirement asks for.
 
 **Build limits:** application code was not changed for this increment. The existing fixture services, time-window limits, and in-memory records remain. The named red suite follows the manual's Chapter 3 example. The AI contract is specified for later implementation; no live model service was called.
 
+---
+
+### 2026-10-03 · Hangting Zhu · Claude (Opus 5.5)
+
+**Asked for:** read every file in the repository after the Chapter 3 branch, fix
+places where the walking skeleton contradicts `docs/SPEC.md`, and add checks so
+later changes can't break UC.1. The request was explicit that the project must
+not be broken and that nothing should be done that could cost marks.
+
+**Inputs given to the tool:** the whole repository on top of commit `3bcfc58`
+(the Chapter 3 branch), the Milestone Check 1 criteria, and the Stakeholder
+Needs and Requirements Definition rubric.
+
+**Decided against, and why:**
+
+- Turning any acceptance test green. Each AC needs owner-reviewed cases, real
+  users or a field pilot. A unit test passing would have been presented as
+  evidence that doesn't exist.
+- Building new SR features such as cancellation, admin screens, AI help or
+  route-failure handling. Milestone Check 1 asks for a controlled walking
+  skeleton, and the SPEC places implementation in later chapters.
+- Changing the CI trigger or softening the red suite. The SPEC says the suite
+  runs on every push and pull request and must not be hidden.
+- Editing anything in the SPEC's Needs and Acceptance Criteria section. The
+  trace check matches those strings exactly, and the criteria are still waiting
+  for team review.
+- Pushing to `main`. Junjie's pull request #1 is still open; merging it is the
+  team's call.
+
+**Produced:**
+
+- `integrations/permit/client.py`: a blank ID now returns no profile. It used to
+  borrow the student profile, which gave rights nobody confirmed (SR.2, SR.15).
+- `integrations/map/client.py`: an unlisted destination gets no walk time
+  instead of a made-up 15 minutes; route text says when it has no estimate (SR.3).
+- `api/reservations.py`: bookings are same-day half-open intervals, and
+  remaining capacity is configured places minus the most held at one moment.
+  The old version compared window labels as strings, so `09:00+2h` and
+  `10:00+2h` never saw each other and a lot could be overbooked (SR.4).
+- `api/ranking.py`: follows the interval change; lots with no estimate sort last.
+- `api/main.py`: all request fields required, `arrival` must be `HH:MM`, `hours`
+  at least 1. No upper limit, because none is approved. Confirmation now
+  includes the booked period. The home page path no longer depends on the
+  directory the server is started from.
+- `web/index.html`: a 422 or server error now shows a message instead of
+  freezing the page; estimates, missing walk times and the capacity basis are
+  labelled; the upper hour limit was dropped to match the API.
+- `api/__init__.py` and the `integrations` package markers.
+- `tests/test_skeleton.py`: 33 developer tests, kept out of
+  `test_spec_acceptance.py` so the trace check still sees exactly 20 tests there.
+- `.github/workflows/chapter3-acceptance.yml`: installs the app, runs the
+  developer tests before the red suite, and writes a short run summary saying
+  which failures are expected. The red suite still fails the job.
+- `docs/SPEC.md`: only the sections that describe current code (scope note,
+  existing components, current data shape, current failure behaviour, and a
+  paragraph on the developer tests).
+- `docs/TRACE.md`: new. One need traced end to end, every need against code and
+  tests, and every file against what asks for it.
+- `README.md` and `web/README.md`: brought up to date; the Actions link points
+  at the course organisation.
+
+**Checked:**
+
+- `pytest tests/test_skeleton.py`: 33 passed.
+- `pytest tests/test_spec_coverage.py`: 1 passed.
+- `pytest tests/test_spec_acceptance.py`: 20 failed, each with its own named
+  message. Same result as before this change.
+- `git diff` against `3bcfc58` shows no changed line in the SPEC's needs and
+  criteria section.
+- Every test name and file path cited in `docs/TRACE.md` exists.
+- The page was run in a browser: student and visitor lookups, a blank ID, a
+  zero-hour stay, and a booking all behave as described above.
+
+**Still open for the team:** whether to adopt the SR.1 30 percent target or keep
+the BMA report's 20 percent, and the SR.1 "retained from Chapter 1" label, since
+Chapter 1 says 20 percent. Neither was changed here.

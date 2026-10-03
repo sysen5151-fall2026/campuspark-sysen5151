@@ -50,8 +50,8 @@ api/                  CampusPark itself: eligibility filtering, option ranking, 
 integrations/permit/  Client for the Campus Identity & Permit System
 integrations/map/     Client for the Campus Map & Navigation Service
 web/                  Driver-facing interface
-docs/                 SPEC.md, prompt log, notes that tie code back to the model
-tests/                Chapter 3 acceptance cases, trace check, and named red tests
+docs/                 SPEC.md, TRACE.md, prompt log: notes that tie code back to the model
+tests/                Chapter 3 acceptance cases, trace check, named red tests, skeleton developer tests
 .github/workflows/    Automatic Chapter 3 acceptance checks
 ```
 
@@ -67,7 +67,8 @@ python3 -m venv .venv
 
 Then open http://127.0.0.1:8000. Try driver IDs `student01`, `staff01` and
 `visitor01`. They hold different permits, so they get different lots back,
-which is the point of the whole system.
+which is the point of the whole system. A blank or made-up ID gets no options
+at all, since we can't confirm a permit for it.
 
 ## Status
 
@@ -75,7 +76,7 @@ The model is further along than the build, which is the order the course asks fo
 
 Done: business and mission analysis, operational concept, system context and hierarchy, UC.1 as use case, action, activity and sequence diagrams, the operational requirements document imported into Innoslate, and a walking skeleton that runs UC.1 end to end.
 
-The skeleton covers the success path. The permit system and the map service are fixture data, reservations live in memory and disappear on restart, and the ranking is walk time with capacity as a tie breaker rather than anything considered.
+The skeleton covers the success path. The permit system and the map service are fixture data, reservations live in memory and disappear on restart, and the ranking is walk time with capacity as a tie breaker rather than anything considered. Bookings are counted over the whole requested period on a single undated day, so two overlapping stays can't push a lot past its capacity.
 
 Chapter 3: `docs/SPEC.md` now links 13 needs to 18 stakeholder requirements through 20 acceptance cases. It contains the data and AI response contracts. Each case has a named red test. One separate test checks that the SPEC, case list, and test names agree. The acceptance tests fail on purpose at this chapter, as the lab manual requires. They do not claim that the product passed field or user tests.
 
@@ -88,13 +89,15 @@ Next: review these proposed criteria and implement the named checks in later cha
 `docs/SPEC.md` is the specification used for later prompts and build work. It is kept at the existing repository path. See `tests/acceptance_cases.json` for the full 20-case need-to-requirement mapping.
 
 ```text
-python -m pip install -r requirements-dev.txt
+python -m pip install -r requirements.txt -r requirements-dev.txt
 python -m pytest tests/ -v
 ```
 
-The Chapter 3 result is one passing trace check and 20 deliberately failing acceptance placeholders. Each failure names its need and criterion. Replace a placeholder with a real check when that criterion is implemented; the trace check also supports passing acceptance tests.
+The Chapter 3 result is one passing trace check, the skeleton developer tests passing, and 20 deliberately failing acceptance placeholders. Each failure names its need and criterion. Replace a placeholder with a real check when that criterion is implemented; the trace check also supports passing acceptance tests.
 
-[GitHub Actions](https://github.com/huntingdrew/campuspark-sysen5151/actions) runs `.github/workflows/chapter3-acceptance.yml` on pushes and pull requests. It first checks trace coverage, then runs the red acceptance suite. A failed acceptance test makes the job fail normally. The workflow does not hide failures or call them passing product tests.
+The developer tests in `tests/test_skeleton.py` only check that the skeleton does what its code says. They are not acceptance evidence, and they live in their own file so the trace check, which expects exactly the 20 named tests in `test_spec_acceptance.py`, keeps passing. `docs/TRACE.md` walks one need all the way to the code and lists what every file is there for.
+
+[GitHub Actions](https://github.com/sysen5151-fall2026/campuspark-sysen5151/actions) runs `.github/workflows/chapter3-acceptance.yml` on pushes and pull requests. It checks trace coverage, runs the developer tests, then runs the red acceptance suite. A failed acceptance test makes the job fail normally, and the run summary says which failures are expected. The workflow does not hide failures or call them passing product tests.
 
 ## Team
 
