@@ -9,11 +9,11 @@
   h1 { margin-bottom: 4px; }
   .sub { color: #666; margin-top: 0; }
   label { display: block; margin-top: 14px; font-size: 14px; }
-  input, select { width: 100%; padding: 8px; font-size: 15px; margin-top: 4px; }
+  input, select { width: 100%; padding: 8px; font-size: 15px; margin-top: 4px; box-sizing: border-box; }
   button { margin-top: 18px; padding: 9px 18px; font-size: 15px; cursor: pointer; }
   .option { border: 1px solid #ddd; padding: 12px; margin-top: 10px; }
   .option h3 { margin: 0 0 4px; font-size: 16px; }
-  .meta { color: #666; font-size: 14px; }
+  .meta { color: #555; font-size: 14px; }
   .ok { border: 1px solid #2e6b3a; padding: 14px; margin-top: 18px; }
   .err { color: #8c1c13; margin-top: 14px; }
   .note { color: #666; font-size: 13px; margin-top: 8px; }
@@ -25,28 +25,34 @@
 <p class="sub">Find parking you're actually allowed to use, and hold it before you drive over.</p>
 
 <label>Driver ID
-  <input id="driver" value="student01">
+  <input id="driver" value="student01" autocomplete="off">
 </label>
 <label>Destination
   <select id="destination"></select>
 </label>
 <label>Arrival time
-  <input id="arrival" value="09:00">
+  <input id="arrival" type="time" value="09:00">
 </label>
 <label>How long (hours)
-  <input id="hours" type="number" value="2" min="1" max="8">
+  <input id="hours" type="number" value="2" min="1">
 </label>
 
 <button onclick="findParking()">Find parking</button>
 
-<div id="out"></div>
+<div id="out" aria-live="polite"></div>
 
 <script>
 const out = document.getElementById("out");
 
+// Lot names and messages come from our own server, but escaping is cheap.
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c =>
+    ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+}
+
 fetch("/api/destinations").then(r => r.json()).then(d => {
   document.getElementById("destination").innerHTML =
-    d.destinations.map(x => `<option>${x}</option>`).join("");
+    d.destinations.map(x => `<option>${esc(x)}</option>`).join("");
 });
 
 function trip() {
@@ -58,44 +64,61 @@ function trip() {
   };
 }
 
-async function findParking() {
-  out.innerHTML = "Checking your permit...";
-  const res = await fetch("/api/options", {
+// FastAPI sends {detail: [...]} with a 422 when a field fails validation.
+// Before this, that response had no options list and the page just froze on
+// "Checking your permit...".
+async function post(url, body) {
+  const r = await fetch(url, {
     method: "POST",
     headers: {"Content-Type": "application/json"},
-    body: JSON.stringify(trip())
-  }).then(r => r.json());
+    body: JSON.stringify(body)
+  });
+  if (r.status === 422) {
+    return {error: "Check the form: arrival needs a time and the stay has to be at least one hour."};
+  }
+  if (!r.ok) {
+    return {error: "Something went wrong on our side. Nothing was booked."};
+  }
+  return r.json();
+}
 
-  if (res.error) { out.innerHTML = `<p class="err">${res.error}</p>`; return; }
+function walkText(minutes) {
+  return minutes === null ? "walk time unavailable" : `about ${minutes} min walk (estimate)`;
+}
+
+async function findParking() {
+  out.innerHTML = "Checking your permit...";
+  const res = await post("/api/options", trip());
+
+  if (res.error) { out.innerHTML = `<p class="err">${esc(res.error)}</p>`; return; }
   if (!res.options.length) {
-    out.innerHTML = `<p class="err">Nothing open for a ${res.permit} permit at that time.</p>`;
+    out.innerHTML = `<p class="err">Nothing bookable for a ${esc(res.permit)} permit from ${esc(res.start)} to ${esc(res.end)}.</p>`;
     return;
   }
 
-  out.innerHTML = `<p class="meta">${res.options.length} option(s) for your ${res.permit} permit</p>` +
+  out.innerHTML =
+    `<p class="meta">${res.options.length} option(s) your ${esc(res.permit)} permit covers, ${esc(res.start)} to ${esc(res.end)}</p>` +
     res.options.map(o => `
       <div class="option">
-        <h3>${o.name}</h3>
-        <div class="meta">${o.walk_minutes} min walk · ${o.remaining} spaces left</div>
-        <button onclick="reserve('${o.lot_id}')">Reserve this one</button>
-      </div>`).join("");
+        <h3>${esc(o.name)}</h3>
+        <div class="meta">${walkText(o.walk_minutes)} · ${o.remaining} of ${o.capacity} places not booked yet</div>
+        <button onclick="reserve('${esc(o.lot_id)}')">Reserve this one</button>
+      </div>`).join("") +
+    `<p class="note">${esc(res.capacity_basis)}</p>`;
 }
 
 async function reserve(lotId) {
-  const res = await fetch("/api/reserve", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({...trip(), lot_id: lotId})
-  }).then(r => r.json());
+  const res = await post("/api/reserve", {...trip(), lot_id: lotId});
 
-  if (res.error) { out.innerHTML += `<p class="err">${res.error}</p>`; return; }
+  if (res.error) { out.innerHTML += `<p class="err">${esc(res.error)}</p>`; return; }
 
   out.innerHTML = `
     <div class="ok">
-      <strong>Reserved ${res.lot}</strong><br>
-      Confirmation ${res.confirmation}<br>
-      ${res.guidance}
-      <p class="note">${res.note}</p>
+      <strong>Reserved ${esc(res.lot)}</strong><br>
+      ${esc(res.start)} to ${esc(res.end)}<br>
+      Confirmation ${esc(res.confirmation)}<br>
+      ${esc(res.guidance)}
+      <p class="note">${esc(res.note)}</p>
     </div>`;
 }
 </script>
