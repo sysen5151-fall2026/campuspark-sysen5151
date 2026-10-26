@@ -47,6 +47,14 @@ def recheck_and_record_reservation(reservation_request: ReservationRequest, *, e
     raise NotImplementedError
 
 
+def commit_capacity_hold(eligible_booking_request: EligibleBookingRequest, *, approved_rules: ApprovedParkingRules, ledger: Any) -> Tuple[ConfirmedReservationRecord, ReservationRecords, BookingRefusalReason]:
+    """commitCapacityHold /internal/f5/3/commit-capacity-hold. F.5.3 Commit Capacity Hold, performed by C.5.3 Capacity Ledger (RS.1.4.3, RS.2.5). Produces IO.8 or IO.22, and IO.18.
+
+    eligible_booking_request = IO.21 (input); approved_rules = IO.17 (control). mechanism: ledger.
+    Implemented in functions/f5_3_commit_capacity_hold.py."""
+    raise NotImplementedError
+
+
 def provide_confirmation_and_route_guidance(confirmed_record: ConfirmedReservationRecord, route_guidance_data: RouteGuidanceData, *, approved_rules: ApprovedParkingRules) -> ReservationConfirmationGuidance:
     """provideConfirmationAndRouteGuidance /internal/f6/provide-confirmation-and-route-guidance. F.6 Provide Confirmation and Route Guidance (1.4.1.6, 1.4.1.10). Produces IO.9.
     confirmed_record = IO.8 (input); route_guidance_data = IO.16 (input); approved_rules = IO.17 (control).

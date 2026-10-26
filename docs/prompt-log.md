@@ -366,3 +366,37 @@ because that changes the reset fixture in `tests/test_skeleton.py`; recorded as 
 both stores for a scripted sequence and the table holding exactly the RS.2.1 fields.
 `test_functional_requirements.py` 11 passed, `test_skeleton.py` 33 passed,
 `test_contract_conformance.py` 10 passed after the refactor.
+
+---
+
+### 2026-10-26 · Hangting Zhu · Claude (Opus 5.5) · Chapter 9 tests for C.5.3, written first
+
+**Asked for:** requirement-derived tests for C.5.3 Capacity Ledger (F.5.3 Commit Capacity Hold), in a
+session that could read only the component specification, the contract and the signature-only stub,
+and no implementation of anything in F.5.
+
+**Built from:** `docs/reservation-subsystem-spec.md` (RS.1.4.3, RS.2.5, RS.1.1.3, RS.2.2, RS.1.2.1,
+RS.1.2.3, RS.2.1, RS.2.3, RS.2.4) and `contracts/api-v1.yaml` version 1.1, which adds the
+second-level flows IO.20 to IO.22 and the `commitCapacityHold` operation.
+
+**Produced:** `functions/f5_3_commit_capacity_hold.py` (signature and ICOM docstring only),
+`docs/reservation-subsystem-spec.md` (copy of the model document), contract version 1.1 with
+regenerated stubs, and `tests/test_c5_3_capacity_ledger.py` (16 test functions, 39 cases). The
+concurrency tests release 100 threads at once through a barrier, 100 rounds for the last free
+place, matching the SR.4 validation of 100 rounds of 100 requests. The specification first said 50
+requests; it was corrected to 100 in the model and here before the tests were finished, because 50
+was weaker than the stakeholder requirement it traces from.
+
+**How the tests were checked:** the test session wrote a throwaway reference implementation outside
+the repository. All 39 cases pass on it, and on three other valid designs (one global lock,
+counting by scanning records, refusing a changed repeat). Fifteen deliberate breaks were each caught,
+among them no lock, check and save as two steps, a second record for a repeated request ID, counting
+touching bookings instead of places held at once, cached rules, and an extra stored field. The
+reference was not kept and is not available to the implementation session.
+
+**Ambiguities the test session reported, left untested on purpose:** what a repeated request ID with
+different details should do (only "one record, unchanged" is tested); a repeat arriving when capacity
+data are missing (RS.2.3 and RS.1.4.3 pull in opposite directions); the refusal reason for a negative
+capacity; boolean or float-valued capacities; the order of IO.18.
+
+**Checked:** against the stub, 39 failed, each on `NotImplementedError`. Every other suite unchanged.

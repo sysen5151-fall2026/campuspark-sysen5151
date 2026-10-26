@@ -15,6 +15,7 @@ from functions import (
     f3_gather_lot_location_and_route_data as f3,
     f4_present_eligible_parking_options as f4,
     f5_recheck_and_record_reservation as f5,
+    f5_3_commit_capacity_hold as f5_3,
     f6_provide_confirmation_and_route_guidance as f6,
     f7_report_reservations_and_affected_bookings as f7,
 )
@@ -26,6 +27,7 @@ IMPLEMENTATIONS = {
     "gather_lot_location_and_route_data": f3,
     "present_eligible_parking_options": f4,
     "recheck_and_record_reservation": f5,
+    "commit_capacity_hold": f5_3,
     "provide_confirmation_and_route_guidance": f6,
     "report_reservations_and_affected_bookings": f7,
 }

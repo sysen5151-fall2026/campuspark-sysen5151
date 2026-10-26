@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: CampusPark internal interface contract
-  version: 1.0.0
+  version: 1.1.0
   description: >
     Written from the internal-flow list of the first-level IDEF0 of F.0 Provide Campus Parking
     Reservations in the Innoslate model, not from the code. One operation per first-level function;
@@ -11,7 +11,10 @@ info:
     API and integration layers, marked x-external. Times are minutes since midnight on one day and
     every period is the half-open interval [start, end). Mechanisms (stores) are not contract fields;
     see docs/adr/0002-stores-are-injected-not-contract-fields.md.
-  x-model-source: Innoslate project 13360, first-level IDEF0 of F.0, export of 2026-10-20
+    Version 1.1 adds the internal flows of the second-level IDEF0 of F.5 (x-c5-internal-flows) and
+    one operation for F.5.3 Commit Capacity Hold, the component built from its specification in
+    Chapter 9. Nothing in version 1.0 changed.
+  x-model-source: Innoslate project 13360, first-level IDEF0 of F.0, export of 2026-10-20; second-level IDEF0 of F.5 from the Chapter 8 and 9 import
 
 x-internal-flows:
   IO.14: {name: Trip Details, from: F.2, to: [F.3], schema: TripDetails, role: input}
@@ -21,6 +24,11 @@ x-internal-flows:
   IO.8: {name: Confirmed Reservation Record, from: F.5, to: [F.6], schema: ConfirmedReservationRecord, role: input}
   IO.18: {name: Reservation Records, from: F.5, to: [F.4, F.7], schema: ReservationRecords, role: input}
   IO.19: {name: Control Change Result, from: F.1, to: [F.7], schema: ControlChangeResult, role: input}
+
+x-c5-internal-flows:
+  IO.20: {name: Screened Booking Request, from: F.5.1, to: [F.5.2], schema: ScreenedBookingRequest, role: input}
+  IO.21: {name: Eligible Booking Request, from: F.5.2, to: [F.5.3], schema: EligibleBookingRequest, role: input}
+  IO.22: {name: Booking Refusal Reason, from: [F.5.1, F.5.2, F.5.3], to: [F.5.4], schema: BookingRefusalReason, role: input}
 
 paths:
   /internal/f1/apply-parking-controls:
@@ -199,6 +207,41 @@ paths:
                   confirmed_record: {$ref: '#/components/schemas/ConfirmedReservationRecord', x-io: IO.8}
                   refusal: {$ref: '#/components/schemas/BookingRefusalNotice', x-io: IO.13}
                   reservation_records: {$ref: '#/components/schemas/ReservationRecords', x-io: IO.18}
+
+  /internal/f5/3/commit-capacity-hold:
+    post:
+      operationId: commitCapacityHold
+      summary: >
+        F.5.3 Commit Capacity Hold, performed by C.5.3 Capacity Ledger (RS.1.4.3, RS.2.5). Produces
+        IO.8 or IO.22, and IO.18.
+      x-function: F.5.3
+      x-module: functions/f5_3_commit_capacity_hold.py
+      x-mechanism: ledger
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [eligible_booking_request, approved_rules]
+              properties:
+                eligible_booking_request: {$ref: '#/components/schemas/EligibleBookingRequest', x-role: input, x-io: IO.21}
+                approved_rules: {$ref: '#/components/schemas/ApprovedParkingRules', x-role: control, x-io: IO.17}
+      responses:
+        '200':
+          description: >
+            Exactly one of confirmed_record and refusal_reason is set. The capacity check and the
+            save happen in one step. A request_id already saved returns the saved record and adds no
+            second hold.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [confirmed_record, reservation_records, refusal_reason]
+                properties:
+                  confirmed_record: {$ref: '#/components/schemas/ConfirmedReservationRecord', x-io: IO.8}
+                  reservation_records: {$ref: '#/components/schemas/ReservationRecords', x-io: IO.18}
+                  refusal_reason: {$ref: '#/components/schemas/BookingRefusalReason', x-io: IO.22}
 
   /internal/f6/provide-confirmation-and-route-guidance:
     post:
@@ -427,6 +470,36 @@ components:
         pool_id: {type: string}
         start: {type: integer, minimum: 0}
         end: {type: integer, minimum: 1}
+    ScreenedBookingRequest:
+      x-io: IO.20
+      description: IO.7 after F.5.1 found every field present and a period that ends after it starts.
+      type: object
+      required: [request_id, driver_id, pool_id, start, end]
+      properties:
+        request_id: {type: string, minLength: 1}
+        driver_id: {type: string, minLength: 1}
+        pool_id: {type: string, minLength: 1}
+        start: {type: integer, minimum: 0, maximum: 1439}
+        end: {type: integer, minimum: 1, maximum: 1440}
+    EligibleBookingRequest:
+      x-io: IO.21
+      description: IO.20 after F.5.2 found the driver eligible for the pool for the whole period and no closure in it.
+      type: object
+      required: [request_id, driver_id, pool_id, start, end]
+      properties:
+        request_id: {type: string, minLength: 1}
+        driver_id: {type: string, minLength: 1}
+        pool_id: {type: string, minLength: 1}
+        start: {type: integer, minimum: 0, maximum: 1439}
+        end: {type: integer, minimum: 1, maximum: 1440}
+    BookingRefusalReason:
+      x-io: IO.22
+      type: object
+      nullable: true
+      required: [request_id, reason]
+      properties:
+        request_id: {type: string, nullable: true}
+        reason: {type: string, enum: [missing_data, not_eligible, closed, pool_full]}
     BookingRefusalNotice:
       x-io: IO.13
       x-external: true

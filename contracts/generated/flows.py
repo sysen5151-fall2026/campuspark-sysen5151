@@ -116,6 +116,27 @@ class ReservationRequest(TypedDict, total=False):  # IO.7 (crosses the CampusPar
     end: int
 
 
+class ScreenedBookingRequest(TypedDict, total=False):  # IO.20
+    request_id: str
+    driver_id: str
+    pool_id: str
+    start: int
+    end: int
+
+
+class EligibleBookingRequest(TypedDict, total=False):  # IO.21
+    request_id: str
+    driver_id: str
+    pool_id: str
+    start: int
+    end: int
+
+
+class BookingRefusalReason(TypedDict, total=False):  # IO.22
+    request_id: Optional[str]
+    reason: str
+
+
 class BookingRefusalNotice(TypedDict, total=False):  # IO.13 (crosses the CampusPark boundary)
     reason: str
     message: str
