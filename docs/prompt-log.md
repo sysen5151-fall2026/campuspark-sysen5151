@@ -290,3 +290,24 @@ IO.12 Reservation Reports lists only affected bookings, so there is no report of
 `tests/test_skeleton.py` 33 passed, `tests/test_spec_coverage.py` 1 passed,
 `tests/test_spec_acceptance.py` 20 failed (the Chapter 3 placeholders, unchanged). `git diff tests/`
 is empty. The 11 functional tests were also run under Python 3.12 with a small runner, all passing.
+
+---
+
+### 2026-10-26 · Hangting Zhu · Claude (Opus 5.5) · Chapter 6 entry-point audit
+
+**Asked for:** a list of every route, endpoint and user-triggered entry point and what calls each
+one, without a use-case mapping. This was a read of the repository, not a generation.
+
+**Built from:** `api/main.py`, `web/index.html`, `integrations/`, `functions/`, `tools/`.
+
+**Produced:** `docs/route-table.md`. The assistant listed four routes (`GET /`,
+`GET /api/destinations`, `POST /api/options`, `POST /api/reserve`) and the two buttons that call
+them, and noted that nothing calls `functions/` yet. The use-case column, the orphan decision and
+the planned status for UC.2 were filled in by Hangting Zhu against the model and are open for the
+team's review in the pull request.
+
+**Result:** no orphan entry points. UC.2 has no entry point and is recorded as planned. The routes
+still use the Chapter 2 helpers instead of `functions/`; recorded as a duplication to remove in the
+Chapter 8 increment.
+
+**Assistant assumptions:** none; no code was changed.
