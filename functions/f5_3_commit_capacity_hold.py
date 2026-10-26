@@ -20,16 +20,88 @@ Shapes (contracts/api-v1.yaml, version 1.1):
     IO.22  {"request_id": str | None, "reason": "missing_data" | "not_eligible" | "closed" | "pool_full"}
 """
 
+import threading
+import uuid
+
+
+def _approved_capacity(approved_rules, pool_id):
+    """Capacity of `pool_id` in IO.17, or None when it is absent or not an integer (RS.2.3)."""
+    if not isinstance(approved_rules, dict):
+        return None
+    pools = approved_rules.get("pools")
+    if not isinstance(pools, dict):
+        return None
+    rule = pools.get(pool_id)
+    if not isinstance(rule, dict):
+        return None
+    capacity = rule.get("capacity")
+    # bool is a subclass of int in Python; True/False are not a capacity.
+    if isinstance(capacity, bool) or not isinstance(capacity, int):
+        return None
+    return capacity
+
 
 class CapacityLedger:
     """C.5.3 Capacity Ledger: the saved reservations and their capacity holds."""
 
     def __init__(self):
-        raise NotImplementedError
+        # One lock guards the whole ledger, so the request-ID lookup, the capacity check and the
+        # save happen as one step (RS.1.4.3) and holds are serialized for every pool (RS.2.5).
+        self._lock = threading.Lock()
+        # Saved IO.8 records in save order. A record is never changed after it is saved, so a
+        # shallow list snapshot taken under the lock can be copied safely outside it.
+        self._records = []
+        # request_id -> saved IO.8, at most one reservation per request ID (RS.2.5).
+        self._by_request_id = {}
+        # pool_id -> {minute: places held}; the capacity holds of the saved reservations.
+        self._holds = {}
 
     def records(self) -> list:
         """Every saved reservation (IO.18)."""
-        raise NotImplementedError
+        with self._lock:
+            snapshot = list(self._records)
+        return [dict(record) for record in snapshot]
+
+    def _commit(self, request, capacity):
+        """Check capacity and save in one step.
+
+        Returns (saved IO.8 or None, refusal reason or None, snapshot of saved records).
+        """
+        request_id = request.get("request_id")
+        with self._lock:
+            saved = self._by_request_id.get(request_id)
+            if saved is not None:
+                # Repeated request ID: the saved reservation, no second hold (RS.1.4.3).
+                return saved, None, list(self._records)
+            if capacity is None:
+                return None, "missing_data", list(self._records)
+
+            pool_id = request["pool_id"]
+            start = request["start"]
+            end = request["end"]
+            minutes = range(start, end)  # half-open [start, end)
+
+            held = self._holds.get(pool_id, {})
+            for minute in minutes:
+                if held.get(minute, 0) >= capacity:
+                    return None, "pool_full", list(self._records)
+
+            # RS.2.1: only reservation ID, request ID, identity reference, pool, period, status.
+            record = {
+                "reservation_id": "res-" + uuid.uuid4().hex,
+                "request_id": request_id,
+                "driver_id": request["driver_id"],
+                "pool_id": pool_id,
+                "start": start,
+                "end": end,
+                "status": "confirmed",
+            }
+            held = self._holds.setdefault(pool_id, {})
+            for minute in minutes:
+                held[minute] = held.get(minute, 0) + 1
+            self._records.append(record)
+            self._by_request_id[request_id] = record
+            return record, None, list(self._records)
 
 
 def commit_capacity_hold(eligible_booking_request: dict, *, approved_rules: dict,
@@ -37,4 +109,11 @@ def commit_capacity_hold(eligible_booking_request: dict, *, approved_rules: dict
     """in: IO.21. control: IO.17. mechanism: ledger (C.5.3).
     out: (IO.8 or None, IO.18, IO.22 or None). Exactly one of IO.8 and IO.22 is not None.
     """
-    raise NotImplementedError
+    # The rule set passed on this call is the one in force (RS.2.2); nothing is cached.
+    capacity = _approved_capacity(approved_rules, eligible_booking_request.get("pool_id"))
+    saved, reason, snapshot = ledger._commit(eligible_booking_request, capacity)
+    reservation_records = [dict(record) for record in snapshot]
+    if saved is not None:
+        return dict(saved), reservation_records, None
+    refusal = {"request_id": eligible_booking_request.get("request_id"), "reason": reason}
+    return None, reservation_records, refusal
