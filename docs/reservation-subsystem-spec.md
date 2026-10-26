@@ -2,7 +2,8 @@
 
 Component specification for C.5 Reservation Subsystem, kept in the Innoslate model as its own document
 ("Reservation Subsystem Specification", Chapter 9) and copied here so code sessions can read it. The model is
-the authority; if the two differ, the model wins and this file is updated.
+the authority; if the two differ, the model wins and this file is updated. RS.1.4.3, RS.1.4.5 and RS.2.5 include the
+changes promoted from the Chapter 9 deviation log (`docs/deviation-log.md`).
 
 C.5 performs F.5 Recheck and Record Reservation. Its four components each perform one second-level function:
 
@@ -97,7 +98,7 @@ Satisfied by: C.5, C.5.2, F.5.2. Traced from: 1.4.1.5.
 Rationale: Rules can change between the search and the commitment (SR.2).  
 Measure of performance: Bookings confirmed that break a permit, time rule or closure (0). Verification: A permit-rule test table including periods that cross a closure.
 
-**RS.1.4.3 Commit Capacity Hold.** The Reservation Subsystem shall check capacity and save the reservation with its capacity hold in one step, and shall return the saved reservation for a request ID it has already saved.  
+**RS.1.4.3 Commit Capacity Hold.** The Reservation Subsystem shall check capacity and save the reservation with its capacity hold in one step, and shall return the saved reservation, with no second hold, for a request ID it has already saved, whatever the capacity data or free places when the request is repeated.  
 Satisfied by: C.5, C.5.3, F.5.3. Traced from: 1.4.1.5, 1.4.1.11.  
 Rationale: Checking and saving separately lets two drivers take the last place (SR.4).  
 Measure of performance: Overbookings in 100 rounds of 100 concurrent requests (0). Verification: Concurrency test on the last free place, plus a repeated request ID.
@@ -106,6 +107,11 @@ Measure of performance: Overbookings in 100 rounds of 100 concurrent requests (0
 Satisfied by: C.5, C.5.4, F.5.4. Traced from: 1.2.3.  
 Rationale: A refusal without a reason sends the driver back to guessing (SR.15).  
 Measure of performance: Refusal notices without a specific reason (0). Verification: Trigger missing_data, not_eligible, closed and pool_full; each notice names its reason.
+
+**RS.1.4.5 Keep Saved Holds When Capacity Falls.** The Reservation Subsystem shall keep every saved reservation and its capacity hold when a new rule set lowers capacity below the places already held, and shall refuse new holds for the minutes that are then full.  
+Satisfied by: C.5, C.5.3. Traced from: 1.4.1.7.  
+Rationale: A capacity cut flags the affected bookings for staff instead of cancelling them (SR.9). Promoted from an assumption the Capacity Ledger made when it was generated from this specification (product build, Chapter 9).  
+Measure of performance: Saved reservations lost or changed after a capacity cut (0). Verification: Lower the capacity below the current holds; every saved reservation remains and new requests for the full minutes are refused.
 
 ## 2 System-wide Requirements
 
@@ -129,9 +135,9 @@ Flowed down from 2.1.8 by apportionment. Satisfied by: C.5.
 Rationale: Of the 5 s system budget, 1.5 s goes to the browser and network, 2 s to the Reservation Subsystem, 1 s to the Confirmation Subsystem, and 0.5 s is reserve. The Reservation Subsystem gets the largest share because it does the recheck and the write.  
 Verification: Timed booking calls against the subsystem; 95th percentile 2 s or less.
 
-**RS.2.5 Capacity Safety Under Concurrent Use.** The Reservation Subsystem shall serialize capacity holds for each pool so that the holds for any minute never exceed the approved capacity, and shall keep at most one reservation per request ID, with at least 100 requests arriving at once.  
+**RS.2.5 Capacity Safety Under Concurrent Use.** The Reservation Subsystem shall serialize capacity holds for each pool and for each request ID so that the holds for any minute never exceed the approved capacity, and shall keep at most one reservation per request ID, with at least 100 requests arriving at once.  
 Flowed down from 2.1.9 by synthesis. Satisfied by: C.5.  
-Rationale: The system rule (never overbook) does not say how. It is met by combining three design properties that together give the outcome: holds serialized per pool, check and save in one step, and request IDs that make repeats harmless. None of the three alone meets the system rule.  
+Rationale: The system rule (never overbook) does not say how. It is met by combining three design properties that together give the outcome: holds serialized per pool and per request ID, check and save in one step, and request IDs that make repeats harmless. None of the three alone meets the system rule. Per request ID was added after the Chapter 9 product build showed that per-pool serialization alone would let one request ID be saved in two pools at once.  
 Verification: 100 rounds of 100 simultaneous requests for the last place, plus repeated request IDs; exactly one confirmation per round and no duplicates.
 
 **RS.2.6 Internal Interface Contract.** The Reservation Subsystem shall accept and produce IO.7, IO.3, IO.17, IO.8, IO.13 and IO.18 only in the forms defined by the internal interface contract, version 1.  

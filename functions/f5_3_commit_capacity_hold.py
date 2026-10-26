@@ -38,6 +38,10 @@ def _approved_capacity(approved_rules, pool_id):
     # bool is a subclass of int in Python; True/False are not a capacity.
     if isinstance(capacity, bool) or not isinstance(capacity, int):
         return None
+    # The contract sets capacity minimum 0; a negative value is invalid data, not a full pool
+    # (deviation D5 in docs/deviation-log.md).
+    if capacity < 0:
+        return None
     return capacity
 
 

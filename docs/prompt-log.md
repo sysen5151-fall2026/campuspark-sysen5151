@@ -400,3 +400,34 @@ data are missing (RS.2.3 and RS.1.4.3 pull in opposite directions); the refusal 
 capacity; boolean or float-valued capacities; the order of IO.18.
 
 **Checked:** against the stub, 39 failed, each on `NotImplementedError`. Every other suite unchanged.
+
+---
+
+### 2026-10-26 · Hangting Zhu · Claude (Opus 5.5) · Chapter 9 C.5.3 generated in one pass, then reconciled
+
+**Asked for:** the implementation of C.5.3 Capacity Ledger, generated once from the filled component
+prompt with no follow-up corrections, by a session that could read only the prompt, the stub and
+the contract, and not the tests.
+
+**Prompt:** `prompts/2026-10-26-c5-3-capacity-ledger.md` (every template section filled).
+
+**Produced:** `functions/f5_3_commit_capacity_hold.py`, committed unchanged in 49c9c8c, with a list
+of 22 assumptions from the generating session.
+
+**Result before any change:** all 39 cases in `tests/test_c5_3_capacity_ledger.py` passed.
+
+**Review:** `docs/deviation-log.md`. Ten points examined, six deviations, all specification defects:
+D1 per-pool serialization cannot protect request IDs across pools; D2 the order between a repeat and
+missing capacity data was unstated; D3 a repeat by a different driver returns the first driver's
+booking; D4 nothing said what a capacity cut does to saved holds; D5 the prompt's error conditions
+missed the contract's minimum of 0; D6 the reservation ID format was unstated.
+
+**Reconciled:** D1 and D2 promoted as amended wording of RS.2.5 and RS.1.4.3, D4 promoted as the new
+RS.1.4.5, all three carried into the Innoslate model by the Chapter 8 and 9 import and into
+`docs/reservation-subsystem-spec.md`. D5 corrected in code (four lines). D6 accepted. D3 left open for
+the team. `tests/test_c5_3_promoted_requirements.py` (3 tests) was written afterwards in the main
+session from the promoted text; the D5 test fails on the uncorrected generation and passes on the
+corrected one. Both C.5.3 test files now run in CI.
+
+**Assistant assumptions:** see the generating session's 22 assumptions as summarized in the
+deviation log; none was accepted silently.
