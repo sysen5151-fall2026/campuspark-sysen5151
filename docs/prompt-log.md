@@ -192,3 +192,32 @@ Needs and Requirements Definition rubric.
 **Still open for the team:** whether to adopt the SR.1 30 percent target or keep
 the BMA report's 20 percent, and the SR.1 "retained from Chapter 1" label, since
 Chapter 1 says 20 percent. Neither was changed here.
+
+---
+
+### 2026-10-26 · Hangting Zhu · Claude (Opus 5.5) · Chapter 4 module decomposition
+
+**Asked for:** one module per first-level function, with a signature written only from that
+function's ICOMs (inputs as parameters, controls as keyword-only configuration, outputs as return
+values, mechanisms as injected dependencies) and no bodies.
+
+**Built from:** the first-level IDEF0 of F.0 in the Innoslate model (F.1 to F.7, IO.1 to IO.19),
+as exported on 2026-10-20.
+
+**Produced:** `functions/` with seven modules, each docstring naming its function ID and listing
+its ICOMs, and `docs/traceability.md`. Every body raises `NotImplementedError`.
+
+**Findings while translating ICOMs:**
+
+- F.3 sends IO.4 to the map service and gets IO.5 back, so its module has two functions, one that
+  writes the request and one that turns the answer into IO.15 and IO.16.
+- F.4 is required to show only options with remaining capacity, but no flow on the first-level
+  IDEF0 brings it the places already held. The signature takes IO.18 Reservation Records as a
+  second input. This is a model gap, not a code choice: the model is corrected in the Chapter 8 and
+  9 import (F.4 receives IO.18), which adds one feedback loop from F.5 to F.4.
+- F.1 and F.5 need somewhere to keep state (approved rules, saved reservations). The first-level
+  IDEF0 has no mechanisms yet, so both take an injected store. The stores become the Chapter 8
+  subsystems.
+
+**Checked:** every module imports; each ICOM in a docstring matches Table 4 of the Chapter 6 and 7
+report; no function body was written.
