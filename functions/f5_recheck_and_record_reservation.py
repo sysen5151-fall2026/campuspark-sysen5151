@@ -36,11 +36,13 @@ class ReservationStore:
         """Every saved reservation (IO.18)."""
         return copy.deepcopy(self._records)
 
-    def _saved_for(self, request_id):
+    def saved_for(self, request_id):
+        """The saved reservation for this request_id, or None."""
         record = self._by_request_id.get(request_id)
         return copy.deepcopy(record) if record is not None else None
 
-    def _save(self, request):
+    def save(self, request):
+        """Save a confirmed reservation for the request and return it (IO.8)."""
         record = {"reservation_id": "RES-%05d" % self._next_number,
                   "request_id": request["request_id"], "driver_id": request["driver_id"],
                   "pool_id": request["pool_id"], "start": request["start"],
@@ -60,14 +62,14 @@ def recheck_and_record_reservation(reservation_request: dict, *, eligibility: di
 
     # A request_id already saved returns that booking and adds no second commitment (SR.4).
     if _is_text(request.get("request_id")):
-        saved = reservation_store._saved_for(request["request_id"])
+        saved = reservation_store.saved_for(request["request_id"])
         if saved is not None:
             return saved, None, reservation_store.all()
 
     refusal = _recheck(request, eligibility, approved_rules, reservation_store)
     if refusal is not None:
         return None, refusal, reservation_store.all()
-    record = reservation_store._save(request)
+    record = reservation_store.save(request)
     return record, None, reservation_store.all()
 
 
@@ -113,7 +115,7 @@ def _recheck(request, eligibility, approved_rules, store):
             return _refuse("closed", "Pool %s is closed %s-%s, which falls inside the booked "
                            "period %s-%s." % (pool_id, _hhmm(closure["start"]),
                                                _hhmm(closure["end"]), _hhmm(start), _hhmm(end)))
-    if _peak_held(store._records, pool_id, start, end) >= capacity:
+    if _peak_held(store.all(), pool_id, start, end) >= capacity:
         return _refuse("pool_full", "Pool %s has no free place for the whole period %s-%s."
                        % (pool_id, _hhmm(start), _hhmm(end)))
     return None

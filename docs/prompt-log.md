@@ -337,3 +337,32 @@ input to F.4, a model correction that the Chapter 8 and 9 import carries into In
 **Checked:** `python tools/gen_stubs.py` regenerates the committed stubs with no difference.
 `pytest tests/test_contract_conformance.py`: 10 passed, including a check that every `x-internal-flows` entry matches a
 flow on the first-level IDEF0, with IO.18 also going to F.4 per ADR-0003.
+
+---
+
+### 2026-10-26 · Hangting Zhu · Claude (Opus 5.5) · Chapter 8 data access and deployment view
+
+**Asked for:** the component and deployment view, a database schema from the Chapter 3 data
+contract, and a data access component behind the interface F.5's ICOMs define, keeping every suite
+green. The model adapter was to be built only if the model authorizes it.
+
+**Built from:** the first-level subsystems C.1 to C.7, the context and first-level conduits, the
+booking record in the `docs/SPEC.md` data contract, and RS.2.1 Limited Personal Data from the
+Reservation Subsystem Specification.
+
+**Produced:** `docs/deployment.md`; `data/schema.sql` and `data/reservation_db.py` (SQLite, standard
+library only); `tests/test_data_access.py` (5 tests) and a CI step for it; ADR-0004 (SQLite) and
+ADR-0005 (no model adapter yet). The in-memory store's private `_saved_for` and `_save` became the
+public `saved_for` and `save`, so a second store can implement the interface without reaching into
+private names; F.5's capacity count now reads `store.all()` instead of the in-memory list.
+
+**Not done, on purpose:** the model adapter. The Innoslate model has no AI function or model
+interface (candidate F.9), so per the Lab Manual the gap is in the model and is fixed there first
+(ADR-0005). The routes in `api/main.py` are not yet switched to `functions/` and the database,
+because that changes the reset fixture in `tests/test_skeleton.py`; recorded as the next step in
+`docs/deployment.md`. The permit and map sources stay fixtures until their owners approve access.
+
+**Checked:** `pytest tests/test_data_access.py`: 5 passed, including F.5 giving identical results on
+both stores for a scripted sequence and the table holding exactly the RS.2.1 fields.
+`test_functional_requirements.py` 11 passed, `test_skeleton.py` 33 passed,
+`test_contract_conformance.py` 10 passed after the refactor.

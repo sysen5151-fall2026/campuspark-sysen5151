@@ -31,6 +31,8 @@ jobs:
         run: python -m pytest tests/test_functional_requirements.py -v
       - name: Check the modules against the interface contract (Chapter 7)
         run: python -m pytest tests/test_contract_conformance.py -v
+      - name: Check the data access component (Chapter 8)
+        run: python -m pytest tests/test_data_access.py -v
       - name: Run the Chapter 3 red acceptance suite
         run: python -m pytest tests/test_spec_acceptance.py -v
       - name: Explain the result
