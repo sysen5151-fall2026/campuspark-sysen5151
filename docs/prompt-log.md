@@ -311,3 +311,29 @@ still use the Chapter 2 helpers instead of `functions/`; recorded as a duplicati
 Chapter 8 increment.
 
 **Assistant assumptions:** none; no code was changed.
+
+---
+
+### 2026-10-26 · Hangting Zhu · Claude (Opus 5.5) · Chapter 7 internal interface contract
+
+**Asked for:** an internal interface contract written from the flow list of the first-level IDEF0,
+not from the code, then typed stubs generated from it and a test that the modules keep those
+signatures.
+
+**Built from:** the internal flows of the first-level IDEF0 of F.0 (IO.8, IO.14 to IO.19) in the
+export of 2026-10-20, the function ICOMs, and the shapes noted in the Chapter 4 docstrings.
+
+**Produced:** `contracts/api-v1.yaml` (OpenAPI 3.0.3, one operation per first-level function, each
+internal flow listed under `x-internal-flows` with its source, receivers and role),
+`tools/gen_stubs.py`, the generated `contracts/generated/flows.py` and `stubs.py`,
+`tests/test_contract_conformance.py`, and ADR-0001 to ADR-0003. A CI step now runs the conformance
+test and `pyyaml` is in `requirements-dev.txt`. The contract was written before the Chapter 5
+implementation session and was one of the files that session could read.
+
+**Decisions recorded as ADRs:** ADR-0001 writes down the toolchain chosen in Chapter 1.
+ADR-0002 keeps the two stores out of the contract as injected mechanisms. ADR-0003 adds IO.18 as an
+input to F.4, a model correction that the Chapter 8 and 9 import carries into Innoslate.
+
+**Checked:** `python tools/gen_stubs.py` regenerates the committed stubs with no difference.
+`pytest tests/test_contract_conformance.py`: 10 passed, including a check that every `x-internal-flows` entry matches a
+flow on the first-level IDEF0, with IO.18 also going to F.4 per ADR-0003.
