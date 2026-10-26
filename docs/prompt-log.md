@@ -252,3 +252,41 @@ not replace the user demonstration; the 60 second limits are checked only for th
 
 **Checked:** `pytest tests/test_functional_requirements.py`: 11 failed, each on `NotImplementedError`.
 `pytest tests/test_skeleton.py tests/test_spec_coverage.py`: 34 passed.
+
+---
+
+### 2026-10-26 · Hangting Zhu · Claude (Opus 5.5) · Chapter 5 implementation
+
+**Asked for:** bodies for the seven modules in `functions/` until
+`tests/test_functional_requirements.py` passes, in a fresh session that could read the requirements,
+the module docstrings, `contracts/api-v1.yaml` and the tests, and was not allowed to change any test.
+
+**Built from:** requirements 1.4.1.1 to 1.4.1.11, the ICOM docstrings from the Chapter 4 increment
+and the shapes in the internal interface contract.
+
+**Produced:** bodies for F.1 to F.7 and their two stores (`RulesStore`, `ReservationStore`). No file
+outside `functions/` was changed. Remaining capacity is computed in F.4 and F.5 the same way, as the
+peak number of places held at once over the booked period, so the options F.4 shows and the
+decisions F.5 makes cannot disagree.
+
+**Decisions the requirements left open, made in code and listed here for the team:**
+
+- F.1 replaces the closure list of a pool when a change gives a new one, and counts an accepted
+  change that alters nothing as a new rule version. Rejected attempts are kept in a private log on
+  the store; nothing reads it yet.
+- F.5 maps unknown, invalid and mismatched eligibility answers to `not_eligible`, and missing or
+  failed answers to `missing_data`, as SR.15 asks.
+- A repeated `request_id` returns the saved record even when the driver or pool differs, because
+  that is what the contract and RS.1.4.3 say. The implementation session pointed out that this
+  would show one driver's booking to another driver who reused the same ID. Open question for the
+  team: narrow the contract to "the same driver and request ID".
+
+**Model gaps found:** IO.5 Parking Locations and Route Information has no route text, but 1.4.1.3 and
+1.4.1.6 need route guidance to show the driver. F.3 builds the text from the walk estimate for now.
+IO.12 Reservation Reports lists only affected bookings, so there is no report of all bookings that
+1.4.1.11 could be checked against directly; the test drives it through a closure on every pool.
+
+**Checked:** `pytest tests/test_functional_requirements.py`: 11 passed.
+`tests/test_skeleton.py` 33 passed, `tests/test_spec_coverage.py` 1 passed,
+`tests/test_spec_acceptance.py` 20 failed (the Chapter 3 placeholders, unchanged). `git diff tests/`
+is empty. The 11 functional tests were also run under Python 3.12 with a small runner, all passing.
