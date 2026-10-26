@@ -221,3 +221,34 @@ its ICOMs, and `docs/traceability.md`. Every body raises `NotImplementedError`.
 
 **Checked:** every module imports; each ICOM in a docstring matches Table 4 of the Chapter 6 and 7
 report; no function body was written.
+
+---
+
+### 2026-10-26 · Hangting Zhu · Claude (Opus 5.5) · Chapter 5 tests, written first
+
+**Asked for:** one test per functional requirement 1.4.1.1 to 1.4.1.11, derived from the requirement
+text and its verification criterion, in a session of its own that could read only the requirement
+text and the `functions/` signatures and docstrings, not `api/`, `integrations/` or `web/`.
+
+**Built from:** requirements 1.4.1.1 to 1.4.1.11 in the Innoslate system requirements document,
+with their verification methods and pass conditions.
+
+**Produced:** `tests/test_functional_requirements.py` (11 tests, named for the requirement IDs) and a
+new CI step that runs them. All 11 fail with `NotImplementedError`, as they should before any body
+exists. The test session also wrote a throwaway reference implementation outside the repository to
+confirm the tests can be satisfied, then broke it on purpose in ten places to confirm each break is
+caught. That reference was not kept and was not given to the implementation session.
+
+**Finding, repaired in the specification before any code was written:** requirement 1.4.1.6 asks for
+the lot address in the confirmation, but none of F.6's inputs carried an address. IO.16 Route
+Guidance Data now carries each pool's address from IO.5, kept even when every route is unavailable,
+which is also what SR.16 needs. The F.3 and F.6 docstrings and `contracts/api-v1.yaml` were updated,
+and the test session then tightened the 1.4.1.3 and 1.4.1.6 tests to check the actual address.
+
+**Other limits the test session reported:** "logged" in 1.4.1.1 can only be checked through the
+reason in IO.19; "same decision" in 1.4.1.8 is a real cross-check only for F.4, F.5 and F.7, because
+F.2 and F.6 make no rule decision; 1.4.1.9 is verified by Demonstration and the automated test does
+not replace the user demonstration; the 60 second limits are checked only for the in-process part.
+
+**Checked:** `pytest tests/test_functional_requirements.py`: 11 failed, each on `NotImplementedError`.
+`pytest tests/test_skeleton.py tests/test_spec_coverage.py`: 34 passed.

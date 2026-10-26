@@ -10,6 +10,7 @@ Shapes:
     IO.9   {"reservation_id": str, "lot": str, "address": str, "start": int, "end": int,
             "guidance": str | None, "warning": str | None}
            guidance None plus a warning when route data are unavailable; the booking stands (SR.16)
+           address is the booked pool's entry in IO.16 "addresses"; "unavailable" only when IO.16 has none
 """
 
 

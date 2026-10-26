@@ -19,7 +19,9 @@ Shapes:
     IO.15  {"trip": IO.14, "lots": list[{"pool_id", "name", "address", "walk_minutes"}],
             "route_status": "ok" | "unavailable"}   walk_minutes None means unavailable
     IO.16  {"destination": str, "status": "ok" | "unavailable",
-            "routes": {pool_id: str | None}}
+            "routes": {pool_id: str | None}, "addresses": {pool_id: str | None}}
+           addresses come from IO.5 and are kept even when every route is unavailable, so the
+           confirmation can still show the lot address (SR.16)
 """
 
 

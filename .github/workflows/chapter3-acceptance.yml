@@ -27,6 +27,8 @@ jobs:
         run: python -m pytest tests/test_spec_coverage.py -v
       - name: Run walking skeleton developer tests
         run: python -m pytest tests/test_skeleton.py -v
+      - name: Run the functional requirement tests (Chapter 5)
+        run: python -m pytest tests/test_functional_requirements.py -v
       - name: Run the Chapter 3 red acceptance suite
         run: python -m pytest tests/test_spec_acceptance.py -v
       - name: Explain the result
@@ -36,6 +38,7 @@ jobs:
             echo "### How to read this run"
             echo ""
             echo "- **Coverage check** and **developer tests** should pass. If either fails, something is actually broken."
+            echo "- **Functional requirement tests** check requirements 1.4.1.1 to 1.4.1.11 from the Innoslate model. A failure here is an unmet system requirement."
             echo "- **Red acceptance suite** fails on purpose. Each of the 20 tests is a Chapter 3 placeholder for a stakeholder requirement that has no accepted evidence yet."
             echo "- A red job therefore means the acceptance criteria are unmet, not that the build is broken. See docs/SPEC.md and docs/TRACE.md."
           } >> "$GITHUB_STEP_SUMMARY"
