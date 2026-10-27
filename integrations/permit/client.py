@@ -12,14 +12,16 @@ FIXTURE_PROFILES = {
     "visitor01": {"driver_id": "visitor01", "name": "Visitor", "permit": "visitor"},
 }
 
-DEFAULT_PROFILE = FIXTURE_PROFILES["student01"]
-
 
 def validate(driver_id):
-    """Return the driver's permit profile, or None if we don't know them.
+    """Return the driver's permit profile, or None if we can't confirm one.
 
     UC.1.3. The real call will be a request to the permit system.
+
+    A blank or unknown ID returns None. It used to fall back to the student
+    profile, which handed permit rights to someone we hadn't identified.
+    SR.2 and SR.15 both say unknown rights can't support a booking.
     """
-    if not driver_id:
-        return DEFAULT_PROFILE
+    if not driver_id or not driver_id.strip():
+        return None
     return FIXTURE_PROFILES.get(driver_id.strip().lower())

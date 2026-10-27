@@ -1,0 +1,543 @@
+openapi: 3.0.3
+info:
+  title: CampusPark internal interface contract
+  version: 1.1.0
+  description: >
+    Written from the internal-flow list of the first-level IDEF0 of F.0 Provide Campus Parking
+    Reservations in the Innoslate model, not from the code. One operation per first-level function;
+    each operation receives the flows that enter that function and returns the flows that leave it.
+    Internal flows (IO.8, IO.14 to IO.19) are defined here in full. Flows that cross the CampusPark
+    boundary (IO.1 to IO.7, IO.9 to IO.13) appear only as the shapes the functions exchange with the
+    API and integration layers, marked x-external. Times are minutes since midnight on one day and
+    every period is the half-open interval [start, end). Mechanisms (stores) are not contract fields;
+    see docs/adr/0002-stores-are-injected-not-contract-fields.md.
+    Version 1.1 adds the internal flows of the second-level IDEF0 of F.5 (x-c5-internal-flows) and
+    one operation for F.5.3 Commit Capacity Hold, the component built from its specification in
+    Chapter 9. Nothing in version 1.0 changed.
+  x-model-source: Innoslate project 13360, first-level IDEF0 of F.0, export of 2026-10-20; second-level IDEF0 of F.5 from the Chapter 8 and 9 import
+
+x-internal-flows:
+  IO.14: {name: Trip Details, from: F.2, to: [F.3], schema: TripDetails, role: input}
+  IO.15: {name: Candidate Parking Data, from: F.3, to: [F.4], schema: CandidateParkingData, role: input}
+  IO.16: {name: Route Guidance Data, from: F.3, to: [F.6], schema: RouteGuidanceData, role: input}
+  IO.17: {name: Approved Parking Rules and Capacity, from: F.1, to: [F.2, F.4, F.5, F.6, F.7], schema: ApprovedParkingRules, role: control}
+  IO.8: {name: Confirmed Reservation Record, from: F.5, to: [F.6], schema: ConfirmedReservationRecord, role: input}
+  IO.18: {name: Reservation Records, from: F.5, to: [F.4, F.7], schema: ReservationRecords, role: input}
+  IO.19: {name: Control Change Result, from: F.1, to: [F.7], schema: ControlChangeResult, role: input}
+
+x-c5-internal-flows:
+  IO.20: {name: Screened Booking Request, from: F.5.1, to: [F.5.2], schema: ScreenedBookingRequest, role: input}
+  IO.21: {name: Eligible Booking Request, from: F.5.2, to: [F.5.3], schema: EligibleBookingRequest, role: input}
+  IO.22: {name: Booking Refusal Reason, from: [F.5.1, F.5.2, F.5.3], to: [F.5.4], schema: BookingRefusalReason, role: input}
+
+paths:
+  /internal/f1/apply-parking-controls:
+    post:
+      operationId: applyParkingControls
+      summary: F.1 Apply Parking Controls (1.4.1.1, 1.4.1.8). Produces IO.17 and IO.19.
+      x-function: F.1
+      x-module: functions/f1_apply_parking_controls.py
+      x-mechanism: rules_store
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [parking_rules_and_capacity]
+              properties:
+                parking_rules_and_capacity: {$ref: '#/components/schemas/ParkingRulesAndCapacityChange', x-role: control, x-io: IO.10}
+      responses:
+        '200':
+          description: The change was applied. IO.17 is the full approved set now in force.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [approved_rules, control_change_result]
+                properties:
+                  approved_rules: {$ref: '#/components/schemas/ApprovedParkingRules', x-io: IO.17}
+                  control_change_result: {$ref: '#/components/schemas/ControlChangeResult', x-io: IO.19}
+        '403':
+          description: >
+            The account is not on the approved staff list (SR.14). Nothing changes; IO.17 is the
+            unchanged set and IO.19 has accepted false with a reason. The attempt is logged.
+
+  /internal/f2/validate-trip-eligibility:
+    post:
+      operationId: validateTripEligibility
+      summary: F.2 Validate Trip Eligibility (1.4.1.2, 1.4.1.9). Produces IO.2 and IO.14.
+      x-function: F.2
+      x-module: functions/f2_validate_trip_eligibility.py
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [parking_request, approved_rules]
+              properties:
+                parking_request: {$ref: '#/components/schemas/ParkingRequest', x-role: input, x-io: IO.1}
+                approved_rules: {$ref: '#/components/schemas/ApprovedParkingRules', x-role: control, x-io: IO.17}
+      responses:
+        '200':
+          description: All trip facts present. IO.2 holds only approved identity fields (SR.13).
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [validation_request, trip_details]
+                properties:
+                  validation_request: {$ref: '#/components/schemas/IdentityPermitValidationRequest', x-io: IO.2}
+                  trip_details: {$ref: '#/components/schemas/TripDetails', x-io: IO.14}
+        '422':
+          description: A required trip fact is missing or invalid. validation_request is null and trip_details.missing names the facts.
+
+  /internal/f3/request-location-and-route:
+    post:
+      operationId: requestLocationAndRoute
+      summary: F.3 writes IO.4 for an eligible trip (1.4.1.3).
+      x-function: F.3
+      x-module: functions/f3_gather_lot_location_and_route_data.py
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [trip_details, eligibility]
+              properties:
+                trip_details: {$ref: '#/components/schemas/TripDetails', x-role: input, x-io: IO.14}
+                eligibility: {$ref: '#/components/schemas/IdentityPermitEligibility', x-role: control, x-io: IO.3}
+      responses:
+        '200':
+          description: IO.4, holding only what the map lookup needs.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/LocationRouteRequest'}
+        '409':
+          description: The trip is not eligible; no request is written (null).
+
+  /internal/f3/gather-lot-location-and-route-data:
+    post:
+      operationId: gatherLotLocationAndRouteData
+      summary: F.3 turns the map answer into IO.15 and IO.16 (1.4.1.3, 1.4.1.10).
+      x-function: F.3
+      x-module: functions/f3_gather_lot_location_and_route_data.py
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [trip_details, locations_and_routes, eligibility]
+              properties:
+                trip_details: {$ref: '#/components/schemas/TripDetails', x-role: input, x-io: IO.14}
+                locations_and_routes: {$ref: '#/components/schemas/ParkingLocationsRouteInformation', x-role: input, x-io: IO.5}
+                eligibility: {$ref: '#/components/schemas/IdentityPermitEligibility', x-role: control, x-io: IO.3}
+      responses:
+        '200':
+          description: >
+            Every lot returned by the map service is kept. When the map answer failed or a walk time
+            is missing, the value is null and the status says unavailable; nothing is invented.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [candidate_parking_data, route_guidance_data]
+                properties:
+                  candidate_parking_data: {$ref: '#/components/schemas/CandidateParkingData', x-io: IO.15}
+                  route_guidance_data: {$ref: '#/components/schemas/RouteGuidanceData', x-io: IO.16}
+
+  /internal/f4/present-eligible-parking-options:
+    post:
+      operationId: presentEligibleParkingOptions
+      summary: F.4 Present Eligible Parking Options (1.4.1.4). Produces IO.6.
+      x-function: F.4
+      x-module: functions/f4_present_eligible_parking_options.py
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [candidate_parking_data, reservation_records, eligibility, approved_rules]
+              properties:
+                candidate_parking_data: {$ref: '#/components/schemas/CandidateParkingData', x-role: input, x-io: IO.15}
+                reservation_records: {$ref: '#/components/schemas/ReservationRecords', x-role: input, x-io: IO.18}
+                eligibility: {$ref: '#/components/schemas/IdentityPermitEligibility', x-role: control, x-io: IO.3}
+                approved_rules: {$ref: '#/components/schemas/ApprovedParkingRules', x-role: control, x-io: IO.17}
+      responses:
+        '200':
+          description: OPTIONS_AVAILABLE with at least one option, or NO_OPTIONS with a reason.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EligibleParkingOptions'}
+
+  /internal/f5/recheck-and-record-reservation:
+    post:
+      operationId: recheckAndRecordReservation
+      summary: F.5 Recheck and Record Reservation (1.4.1.5, 1.4.1.11). Produces IO.8 or IO.13, and IO.18.
+      x-function: F.5
+      x-module: functions/f5_recheck_and_record_reservation.py
+      x-mechanism: reservation_store
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reservation_request, eligibility, approved_rules]
+              properties:
+                reservation_request: {$ref: '#/components/schemas/ReservationRequest', x-role: input, x-io: IO.7}
+                eligibility: {$ref: '#/components/schemas/IdentityPermitEligibility', x-role: control, x-io: IO.3}
+                approved_rules: {$ref: '#/components/schemas/ApprovedParkingRules', x-role: control, x-io: IO.17}
+      responses:
+        '200':
+          description: >
+            Exactly one of confirmed_record and refusal is set. A request_id already saved returns the
+            saved record and adds no second commitment. Missing, failed or unknown eligibility, a
+            closure or a full pool for any part of the period gives a refusal and no record (SR.15, SR.4).
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [confirmed_record, refusal, reservation_records]
+                properties:
+                  confirmed_record: {$ref: '#/components/schemas/ConfirmedReservationRecord', x-io: IO.8}
+                  refusal: {$ref: '#/components/schemas/BookingRefusalNotice', x-io: IO.13}
+                  reservation_records: {$ref: '#/components/schemas/ReservationRecords', x-io: IO.18}
+
+  /internal/f5/3/commit-capacity-hold:
+    post:
+      operationId: commitCapacityHold
+      summary: >
+        F.5.3 Commit Capacity Hold, performed by C.5.3 Capacity Ledger (RS.1.4.3, RS.2.5). Produces
+        IO.8 or IO.22, and IO.18.
+      x-function: F.5.3
+      x-module: functions/f5_3_commit_capacity_hold.py
+      x-mechanism: ledger
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [eligible_booking_request, approved_rules]
+              properties:
+                eligible_booking_request: {$ref: '#/components/schemas/EligibleBookingRequest', x-role: input, x-io: IO.21}
+                approved_rules: {$ref: '#/components/schemas/ApprovedParkingRules', x-role: control, x-io: IO.17}
+      responses:
+        '200':
+          description: >
+            Exactly one of confirmed_record and refusal_reason is set. The capacity check and the
+            save happen in one step. A request_id already saved returns the saved record and adds no
+            second hold.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [confirmed_record, reservation_records, refusal_reason]
+                properties:
+                  confirmed_record: {$ref: '#/components/schemas/ConfirmedReservationRecord', x-io: IO.8}
+                  reservation_records: {$ref: '#/components/schemas/ReservationRecords', x-io: IO.18}
+                  refusal_reason: {$ref: '#/components/schemas/BookingRefusalReason', x-io: IO.22}
+
+  /internal/f6/provide-confirmation-and-route-guidance:
+    post:
+      operationId: provideConfirmationAndRouteGuidance
+      summary: F.6 Provide Confirmation and Route Guidance (1.4.1.6, 1.4.1.10). Produces IO.9.
+      x-function: F.6
+      x-module: functions/f6_provide_confirmation_and_route_guidance.py
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [confirmed_record, route_guidance_data, approved_rules]
+              properties:
+                confirmed_record: {$ref: '#/components/schemas/ConfirmedReservationRecord', x-role: input, x-io: IO.8}
+                route_guidance_data: {$ref: '#/components/schemas/RouteGuidanceData', x-role: input, x-io: IO.16}
+                approved_rules: {$ref: '#/components/schemas/ApprovedParkingRules', x-role: control, x-io: IO.17}
+      responses:
+        '200':
+          description: Confirmation. guidance is null and warning is set when route data are unavailable; the booking stands (SR.16).
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ReservationConfirmationGuidance'}
+
+  /internal/f7/report-reservations-and-affected-bookings:
+    post:
+      operationId: reportReservationsAndAffectedBookings
+      summary: F.7 Report Reservations and Affected Bookings (1.4.1.7, 1.4.1.11). Produces IO.11 and IO.12.
+      x-function: F.7
+      x-module: functions/f7_report_reservations_and_affected_bookings.py
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reservation_records, control_change_result, approved_rules]
+              properties:
+                reservation_records: {$ref: '#/components/schemas/ReservationRecords', x-role: input, x-io: IO.18}
+                control_change_result: {$ref: '#/components/schemas/ControlChangeResult', x-role: input, x-io: IO.19}
+                approved_rules: {$ref: '#/components/schemas/ApprovedParkingRules', x-role: control, x-io: IO.17}
+      responses:
+        '200':
+          description: Acknowledgement plus the affected bookings and the confirmed count for the changed pool.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [acknowledgement, reports]
+                properties:
+                  acknowledgement: {$ref: '#/components/schemas/ControlUpdateAcknowledgement', x-io: IO.11}
+                  reports: {$ref: '#/components/schemas/ReservationReports', x-io: IO.12}
+
+components:
+  schemas:
+    Window:
+      type: object
+      required: [start, end]
+      properties:
+        start: {type: integer, minimum: 0, description: minutes since midnight, inclusive}
+        end: {type: integer, minimum: 1, description: minutes since midnight, exclusive; end > start}
+    PoolRule:
+      type: object
+      required: [name, capacity, permits, closures]
+      properties:
+        name: {type: string}
+        capacity: {type: integer, minimum: 0, description: reservable places from booking records, not sensors}
+        permits: {type: array, items: {type: string}}
+        closures: {type: array, items: {$ref: '#/components/schemas/Window'}}
+    ApprovedParkingRules:
+      x-io: IO.17
+      type: object
+      required: [version, pools]
+      properties:
+        version: {type: integer, minimum: 1, description: increases by one with every accepted change}
+        pools: {type: object, additionalProperties: {$ref: '#/components/schemas/PoolRule'}}
+    ControlChangeResult:
+      x-io: IO.19
+      type: object
+      required: [accepted, reason, version, pool_id, windows]
+      properties:
+        accepted: {type: boolean}
+        reason: {type: string, nullable: true}
+        version: {type: integer, minimum: 1}
+        pool_id: {type: string}
+        windows: {type: array, items: {$ref: '#/components/schemas/Window'}, description: periods the change touched}
+    TripDetails:
+      x-io: IO.14
+      type: object
+      required: [driver_id, destination, start, end, missing]
+      properties:
+        driver_id: {type: string}
+        destination: {type: string}
+        start: {type: integer, minimum: 0, nullable: true}
+        end: {type: integer, minimum: 1, nullable: true}
+        missing: {type: array, items: {type: string}, description: required trip facts that were absent or invalid}
+    CandidateLot:
+      type: object
+      required: [pool_id, name, address, walk_minutes]
+      properties:
+        pool_id: {type: string}
+        name: {type: string}
+        address: {type: string, nullable: true}
+        walk_minutes: {type: integer, minimum: 0, nullable: true, description: estimate; null means unavailable}
+    CandidateParkingData:
+      x-io: IO.15
+      type: object
+      required: [trip, lots, route_status]
+      properties:
+        trip: {$ref: '#/components/schemas/TripDetails'}
+        lots: {type: array, items: {$ref: '#/components/schemas/CandidateLot'}}
+        route_status: {type: string, enum: [ok, unavailable]}
+    RouteGuidanceData:
+      x-io: IO.16
+      type: object
+      required: [destination, status, routes, addresses]
+      properties:
+        destination: {type: string}
+        status: {type: string, enum: [ok, unavailable]}
+        routes: {type: object, additionalProperties: {type: string, nullable: true}}
+        addresses:
+          type: object
+          additionalProperties: {type: string, nullable: true}
+          description: lot address per pool from IO.5, kept even when routes are unavailable (SR.16)
+    ConfirmedReservationRecord:
+      x-io: IO.8
+      type: object
+      nullable: true
+      required: [reservation_id, request_id, driver_id, pool_id, start, end, status]
+      properties:
+        reservation_id: {type: string}
+        request_id: {type: string}
+        driver_id: {type: string}
+        pool_id: {type: string}
+        start: {type: integer, minimum: 0}
+        end: {type: integer, minimum: 1}
+        status: {type: string, enum: [confirmed]}
+    ReservationRecords:
+      x-io: IO.18
+      type: array
+      items: {$ref: '#/components/schemas/ConfirmedReservationRecord'}
+    ParkingRulesAndCapacityChange:
+      x-io: IO.10
+      x-external: true
+      type: object
+      required: [account, pool_id]
+      properties:
+        account: {type: string}
+        pool_id: {type: string}
+        capacity: {type: integer, minimum: 0, nullable: true}
+        permits: {type: array, items: {type: string}, nullable: true}
+        closures: {type: array, items: {$ref: '#/components/schemas/Window'}, nullable: true}
+    ParkingRequest:
+      x-io: IO.1
+      x-external: true
+      type: object
+      properties:
+        driver_id: {type: string}
+        destination: {type: string}
+        arrival: {type: string, pattern: '^([01]\d|2[0-3]):[0-5]\d$'}
+        hours: {type: integer, minimum: 1}
+    IdentityPermitValidationRequest:
+      x-io: IO.2
+      x-external: true
+      type: object
+      nullable: true
+      required: [driver_id]
+      additionalProperties: false
+      properties:
+        driver_id: {type: string}
+    IdentityPermitEligibility:
+      x-io: IO.3
+      x-external: true
+      type: object
+      required: [driver_id, status, permit]
+      properties:
+        driver_id: {type: string}
+        status: {type: string, enum: [eligible, invalid, unknown, missing, failed]}
+        permit: {type: string, nullable: true}
+    LocationRouteRequest:
+      x-io: IO.4
+      x-external: true
+      type: object
+      nullable: true
+      required: [destination]
+      additionalProperties: false
+      properties:
+        destination: {type: string}
+    ParkingLocationsRouteInformation:
+      x-io: IO.5
+      x-external: true
+      type: object
+      required: [status, lots]
+      properties:
+        status: {type: string, enum: [ok, failed]}
+        lots: {type: array, items: {$ref: '#/components/schemas/CandidateLot'}}
+    EligibleParkingOptions:
+      x-io: IO.6
+      x-external: true
+      type: object
+      required: [status, reason, options]
+      properties:
+        status: {type: string, enum: [OPTIONS_AVAILABLE, NO_OPTIONS]}
+        reason: {type: string, nullable: true}
+        options:
+          type: array
+          items:
+            type: object
+            required: [pool_id, name, walk_minutes, remaining, capacity, facts]
+            properties:
+              pool_id: {type: string}
+              name: {type: string}
+              walk_minutes: {type: integer, nullable: true}
+              remaining: {type: integer, minimum: 1}
+              capacity: {type: integer, minimum: 0}
+              facts: {type: array, items: {type: string}}
+    ReservationRequest:
+      x-io: IO.7
+      x-external: true
+      type: object
+      required: [request_id, driver_id, pool_id, start, end]
+      properties:
+        request_id: {type: string}
+        driver_id: {type: string}
+        pool_id: {type: string}
+        start: {type: integer, minimum: 0}
+        end: {type: integer, minimum: 1}
+    ScreenedBookingRequest:
+      x-io: IO.20
+      description: IO.7 after F.5.1 found every field present and a period that ends after it starts.
+      type: object
+      required: [request_id, driver_id, pool_id, start, end]
+      properties:
+        request_id: {type: string, minLength: 1}
+        driver_id: {type: string, minLength: 1}
+        pool_id: {type: string, minLength: 1}
+        start: {type: integer, minimum: 0, maximum: 1439}
+        end: {type: integer, minimum: 1, maximum: 1440}
+    EligibleBookingRequest:
+      x-io: IO.21
+      description: IO.20 after F.5.2 found the driver eligible for the pool for the whole period and no closure in it.
+      type: object
+      required: [request_id, driver_id, pool_id, start, end]
+      properties:
+        request_id: {type: string, minLength: 1}
+        driver_id: {type: string, minLength: 1}
+        pool_id: {type: string, minLength: 1}
+        start: {type: integer, minimum: 0, maximum: 1439}
+        end: {type: integer, minimum: 1, maximum: 1440}
+    BookingRefusalReason:
+      x-io: IO.22
+      type: object
+      nullable: true
+      required: [request_id, reason]
+      properties:
+        request_id: {type: string, nullable: true}
+        reason: {type: string, enum: [missing_data, not_eligible, closed, pool_full]}
+    BookingRefusalNotice:
+      x-io: IO.13
+      x-external: true
+      type: object
+      nullable: true
+      required: [reason, message]
+      properties:
+        reason: {type: string, enum: [missing_data, not_eligible, closed, pool_full]}
+        message: {type: string}
+    ReservationConfirmationGuidance:
+      x-io: IO.9
+      x-external: true
+      type: object
+      required: [reservation_id, lot, address, start, end, guidance, warning]
+      properties:
+        reservation_id: {type: string}
+        lot: {type: string}
+        address: {type: string, nullable: true}
+        start: {type: integer}
+        end: {type: integer}
+        guidance: {type: string, nullable: true}
+        warning: {type: string, nullable: true}
+    ControlUpdateAcknowledgement:
+      x-io: IO.11
+      x-external: true
+      type: object
+      required: [accepted, version, pool_id, reason]
+      properties:
+        accepted: {type: boolean}
+        version: {type: integer}
+        pool_id: {type: string}
+        reason: {type: string, nullable: true}
+    ReservationReports:
+      x-io: IO.12
+      x-external: true
+      type: object
+      required: [pool_id, affected, confirmed_count]
+      properties:
+        pool_id: {type: string}
+        affected: {type: array, items: {$ref: '#/components/schemas/ConfirmedReservationRecord'}}
+        confirmed_count: {type: integer, minimum: 0}

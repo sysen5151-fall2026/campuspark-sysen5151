@@ -41,15 +41,25 @@ DESTINATIONS = ["Duffield Hall", "Statler Hotel", "Vet School"]
 
 
 def lots_near(destination):
-    """Candidate lots with a walk time to the destination (UC.1.5)."""
+    """Candidate lots with a walk time to the destination (UC.1.5).
+
+    walk_minutes is None when we have no estimate for that destination. We
+    used to fill in 15 minutes here, but SR.3 wants a missing fact shown as
+    unavailable rather than a number we made up.
+    """
     out = []
     for lot in LOTS:
         lot = dict(lot)
-        lot["walk_minutes"] = lot["walk_minutes"].get(destination, 15)
+        lot["walk_minutes"] = lot["walk_minutes"].get(destination)
         out.append(lot)
     return out
 
 
 def route_to(lot, destination):
     """One line of guidance. The real service returns an actual route."""
-    return f"Park at {lot['name']}, then about a {lot['walk_minutes']} minute walk to {destination}."
+    if lot["walk_minutes"] is None:
+        return f"Park at {lot['name']}. We don't have a walk time from there to {destination}."
+    return (
+        f"Park at {lot['name']}, then an estimated {lot['walk_minutes']} minute "
+        f"walk to {destination}."
+    )

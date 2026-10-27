@@ -1,0 +1,52 @@
+name: Chapter 3 acceptance
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out the project
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Install the app and test tools
+        run: python -m pip install -r requirements.txt -r requirements-dev.txt
+      - name: Check need and test coverage
+        run: python -m pytest tests/test_spec_coverage.py -v
+      - name: Run walking skeleton developer tests
+        run: python -m pytest tests/test_skeleton.py -v
+      - name: Run the functional requirement tests (Chapter 5)
+        run: python -m pytest tests/test_functional_requirements.py -v
+      - name: Check the modules against the interface contract (Chapter 7)
+        run: python -m pytest tests/test_contract_conformance.py -v
+      - name: Check the data access component (Chapter 8)
+        run: python -m pytest tests/test_data_access.py -v
+      - name: Run the C.5.3 component tests (Chapter 9)
+        run: python -m pytest tests/test_c5_3_capacity_ledger.py tests/test_c5_3_promoted_requirements.py -v
+      - name: Run the Chapter 3 red acceptance suite
+        run: python -m pytest tests/test_spec_acceptance.py -v
+      - name: Explain the result
+        if: always()
+        run: |
+          {
+            echo "### How to read this run"
+            echo ""
+            echo "- **Coverage check** and **developer tests** should pass. If either fails, something is actually broken."
+            echo "- **Functional requirement tests** check requirements 1.4.1.1 to 1.4.1.11 from the Innoslate model. A failure here is an unmet system requirement."
+            echo "- **Contract conformance** checks that every function module keeps the signature generated from contracts/api-v1.yaml and that every internal flow in the model has a schema."
+            echo "- **C.5.3 component tests** check the Capacity Ledger against the Reservation Subsystem Specification, including 100 rounds of 100 concurrent requests for the last place."
+            echo "- **Red acceptance suite** fails on purpose. Each of the 20 tests is a Chapter 3 placeholder for a stakeholder requirement that has no accepted evidence yet."
+            echo "- A red job therefore means the acceptance criteria are unmet, not that the build is broken. See docs/SPEC.md and docs/TRACE.md."
+          } >> "$GITHUB_STEP_SUMMARY"
