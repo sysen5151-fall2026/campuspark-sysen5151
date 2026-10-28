@@ -1,46 +1,55 @@
 # CampusPark visual design
 
 **Subject.** A campus driver, about to leave for Cornell, wants to know which lots their permit allows
-and to hold a place before driving. The world they already read every day is parking signage: the
-blue P sign, the painted stall lines, the curb, the permit hang-tag on the mirror. The interface borrows
-that vernacular instead of a generic app look.
+and to hold a place before driving. The page is set as a Swiss International Style poster: an
+asymmetric grid, a flush-left grotesk, numbers set large because the numbers are the decision (minutes
+of walking, places free), and one signal color used only where something is chosen or held.
 
 ## Tokens
 
 | Name | Hex | Role |
 | --- | --- | --- |
-| Sign blue | `#1D4E9E` | the P sign: header band, lot markers, option signs, primary action |
-| Sign white | `#FFFFFF` | sign faces and borders |
-| Asphalt | `#2C2F34` | the map and anything that stands for the road surface; held stalls |
-| Curb yellow | `#F4C21B` | the walking route and the place you hold; never decoration |
-| Concrete | `#DCDDD8` | page ground |
-| Tag colors | student `#3E8E5A`, staff `#1D4E9E`, visitor `#E3672B` | the permit hang-tag after the permit is checked |
+| Signal red | `#E1251B` | lots the permit allows, the walk being looked at, the held place |
+| Black | `#000000` | type, rules, the destination, primary actions |
+| White | `#FFFFFF` | ground |
+| Field grey | `#EDEDED` | the map field and empty states |
+| Mid grey | `#8A8A8A` | lots the permit does not allow, secondary text |
 
-Type: **Overpass** (Google Fonts), the open revival of the US highway sign face, at 400, 600 and 800.
-One family; hierarchy comes from weight and size. Body 16px / 1.5, headings 28/22/18, sign names 20/800.
+Type: **Archivo** (Google Fonts, variable width and weight). Wordmark 800 weight at up to 168px,
+tight tracking, lowercase. Big numerals 800 at 72px. Body 400 at 17px / 1.45. Labels 600 at 15px,
+sentence case. One family; contrast comes from size and weight.
 
-## Layout
+## Grid
+
+Twelve columns, 24px gutters, 40px page margin. Left seven columns: the wordmark and the map. Right
+five: the numbered steps, because the flow is a real sequence (1 your trip, 2 lots, 3 your place).
 
 ```
-+--[ P  CampusPark ]---------------------------- Find my booking  Staff console --+
-|  +------------------- map, sticky --------------+  +---- hang-tag -----------+  |
-|  |  asphalt tiles, P markers, destination pin   |  |   ( )                   |  |
-|  |  curb-yellow dashed walk on hover or hold    |  |  Your trip  [form]      |  |
-|  |                                              |  +-------------------------+  |
-|  |                                              |  [P | Forest Home Drive   ]  |
-|  |                                              |  [  | 11 min · stall strip]  |
-|  +----------------------------------------------+  [P | A Lot ...           ]  |
-+---------------------------------------------------------------------------------+
+| campus           | 1  Your trip                    |
+| park             |    Driver ID ______________      |
+|                  |    Destination ____________      |
+|------------------|    Arriving ___   Hours __      |
+| schematic map    |    [ Find parking ]              |
+| dots and 45° lines|-------------------------------- |
+| not to scale     | 2  Lots                          |
+|                  | 11   Forest Home Drive   14/15   |
+|                  | 14   A Lot               40/40   |
 ```
 
-Phones stack: map (45vh), hang-tag, signs.
+## Map
+
+No map tiles. A schematic in the manner of a transit diagram: the destination is a black square,
+lots are circles (red and numbered by walking order when the permit allows them, grey rings when it
+does not), and the walk is drawn as a line that runs at 45° and then straight. Nodes start from their
+approximate real positions and are pushed apart where they crowd, then snapped to a 40px construction
+grid, as transit diagrams do. It keeps who is north or east of whom but is not to scale, and the page
+says so.
 
 ## Rules
 
-- Every structural device carries data: the stall strip is the pool's real capacity, with held stalls
-  filled; the tag color is the permit the permit system returned; the yellow line is the walk.
-- Signs are flat, with the inset white border real signs have. No drop shadows, no rounded card kit.
-- One orchestrated motion: after a search the map fits the lots and the markers settle in order; after
-  a booking the walk draws itself. Both are off under `prefers-reduced-motion`.
-- Sentence case, plain words, no all-caps labels. Errors say what happened and what to do.
-- Map positions are approximate fixture positions and the page says so.
+- Sharp rectangles, no rounded corners, no shadows. Thick rules (3px) only where they separate steps.
+- Red marks a choice the driver can make or has made. Nothing decorative is red.
+- The numerals are the content: walk minutes and places free are the largest text in each row.
+- One motion: the walk line draws itself when a lot is pointed at or held. Off under
+  `prefers-reduced-motion`.
+- Sentence case, plain words. Errors say what happened and what to do next.

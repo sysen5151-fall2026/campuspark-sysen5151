@@ -500,3 +500,21 @@ checked the driver page at phone width.
 
 **Limits:** map positions are hand-placed and labelled approximate; the page needs network access for
 the map tiles and the font.
+
+---
+
+### 2026-10-28 · Hangting Zhu · Claude (Opus 5.5) · Second redesign: Swiss poster and schematic map
+
+**Asked for:** an interface with real artistic character. The parking-signage version was coherent but
+read as municipal signage, and its dark tiled map was murky. Hangting chose the Swiss International
+Style direction from four options.
+
+**Produced:** a new `web/DESIGN.md` (signal red, black, white and two greys; Archivo; a twelve-column
+grid; rules for red and motion), rewritten `style.css`, `driver.js`, `admin.js` and both pages. The
+Leaflet map and its tiles are gone. The map is now an SVG transit-style diagram: nodes start from their
+approximate positions, are pushed apart where they crowd and snapped to a 40px grid, and walks are drawn
+as a 45-degree segment then a straight one with the walking minutes beside it. The page states that the
+diagram is not to scale.
+
+**Checked:** all suites unchanged (skeleton 43 passed). Search, pointing at a lot, holding a place,
+looking a booking up and applying a closure were run by hand at desktop and phone widths.
