@@ -21,6 +21,15 @@ from integrations.map import client as map_client
 
 app = FastAPI(title="CampusPark")
 
+
+@app.middleware("http")
+async def revalidate_pages(request, call_next):
+    """Pages and their scripts change with every increment; make browsers check before reusing them."""
+    response = await call_next(request)
+    if not request.url.path.startswith("/api/"):
+        response.headers["Cache-Control"] = "no-cache"
+    return response
+
 WEB = Path(__file__).resolve().parents[1] / "web"
 app.mount("/static", StaticFiles(directory=WEB / "static"), name="static")
 
