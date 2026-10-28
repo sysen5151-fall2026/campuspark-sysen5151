@@ -274,6 +274,12 @@ def test_unapproved_account_cannot_change_controls():
     assert pools["forest-home"]["capacity"] == 15
 
 
+def test_map_positions_cover_every_lot_and_destination():
+    data = client.get("/api/map").json()
+    assert {l["pool_id"] for l in data["lots"]} == {lot["id"] for lot in map_client.LOTS}
+    assert {d["name"] for d in data["destinations"]} == set(map_client.DESTINATIONS)
+
+
 def test_clock_labels():
     assert service.clock(540) == "09:00"
     assert service.clock(1440) == "24:00"  # a stay may end at midnight, never after it (F.2)

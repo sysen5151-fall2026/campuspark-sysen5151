@@ -107,6 +107,12 @@ def destinations():
     return {"destinations": map_client.DESTINATIONS}
 
 
+@app.get("/api/map")
+def map_positions():
+    """UC.1.6: where the lots and destinations sit on the driver's map (approximate, display only)."""
+    return map_client.map_view()
+
+
 @app.post("/api/options")
 def options(req: OptionsRequest):
     """UC.1.1 through UC.1.6."""

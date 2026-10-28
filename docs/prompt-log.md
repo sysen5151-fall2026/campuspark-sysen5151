@@ -476,3 +476,27 @@ store is persisted; the staff check is the fixture account `admin01`, not a sign
 C.5.3 42, coverage 1; the 20 Chapter 3 placeholders still fail. The full UC.1 and UC.2 flows were run
 by hand in the browser: search, facts, booking, confirmation, and a closure that listed the booking it
 affected.
+
+---
+
+### 2026-10-28 · Hangting Zhu · Claude (Opus 5.5) · Visual redesign and campus map
+
+**Asked for:** a distinctive interface instead of a generic app look, and a map that fits it.
+
+**Built from:** the guidance of Anthropic's `frontend-design` skill (subject first, a written token
+plan, a layout sketch, then a review against generic defaults), applied to the subject: drivers who
+read parking signage every day.
+
+**Produced:** `web/DESIGN.md` (tokens, type, layout, rules), a rewritten `web/static/style.css`,
+`web/static/driver.js` and `web/static/admin.js`, new markup for both pages, approximate map positions
+in the map fixture and a display-only `GET /api/map` route. Look: sign-blue P signs with inset
+borders, the trip form as a permit hang-tag whose color follows the permit returned, one stall per
+place in each pool with held stalls filled, a curb-yellow walking line, Overpass type, and
+OpenStreetMap tiles filtered to asphalt (Leaflet 1.9.4 from cdnjs).
+
+**Checked:** skeleton 43 passed (one new test that every lot and destination has a map position);
+other suites unchanged. Searched, hovered, booked and applied a closure by hand at desktop width, and
+checked the driver page at phone width.
+
+**Limits:** map positions are hand-placed and labelled approximate; the page needs network access for
+the map tiles and the font.

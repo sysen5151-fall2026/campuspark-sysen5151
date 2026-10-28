@@ -13,6 +13,7 @@ model (UC.1 Driver Finds and Reserves Campus Parking, UC.2 Maintain Parking Rule
 | 3 | `POST /api/options` | "Find parking" | F.2, X.F.3, F.3, X.F.4, F.4 | UC.1 | UC.1.1 to UC.1.6 |
 | 4 | `POST /api/reserve` | "Reserve ..." | F.2, X.F.3, F.5, F.6 | UC.1 | UC.1.7 to UC.1.9 |
 | 5 | `GET /api/reservations/{id}` | "Find my booking" | F.6 on a saved record, for its own driver only | UC.1 | UC.1.10: the driver reviews the confirmation |
+| 5a | `GET /api/map` | page load of `web/index.html` | approximate map positions from the map fixture | UC.1 | UC.1.6: the options shown on the map, display only |
 | 6 | `GET /admin` | Parking Administrator opens the staff console | serves `web/admin.html` | UC.2 | |
 | 7 | `GET /api/admin/pools` | staff console load | IO.17 now in force | UC.2 | the administrator reviews current controls |
 | 8 | `POST /api/admin/controls` | "Apply change" | F.1, then F.7 | UC.2 | change applied, acknowledged (IO.11), affected bookings reported (IO.12) |
@@ -32,7 +33,7 @@ None. UC.2 was planned at the first audit and now has rows 6 to 8.
 
 ## Reconciling the counts
 
-Two use cases in the model, eight entry points: five on UC.1 and three on UC.2. Every function F.1 to
+Two use cases in the model, nine entry points: six on UC.1 and three on UC.2. Every function F.1 to
 F.7 is reached from at least one route. The Chapter 2 helpers that duplicated the rules
 (`api/eligibility.py`, `api/ranking.py`, `api/reservations.py`) were removed when the routes moved
 onto `functions/`.

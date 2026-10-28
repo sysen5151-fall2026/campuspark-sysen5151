@@ -9,6 +9,7 @@ but the shape of the data is what we expect the real service to give us.
 LOTS = [
     {
         "id": "A-lot",
+        "position": (42.4558, -76.4746),
         "address": "A Lot, Jessup Road, Ithaca, NY",
         "name": "A Lot",
         "permits": ["student", "staff"],
@@ -17,6 +18,7 @@ LOTS = [
     },
     {
         "id": "hoy-garage",
+        "position": (42.4447, -76.4788),
         "address": "Hoy Road Garage, Hoy Road, Ithaca, NY",
         "name": "Hoy Road Garage",
         "permits": ["staff", "visitor"],
@@ -25,6 +27,7 @@ LOTS = [
     },
     {
         "id": "forest-home",
+        "position": (42.4512, -76.4712),
         "address": "Forest Home Drive lot, Forest Home Drive, Ithaca, NY",
         "name": "Forest Home Drive",
         "permits": ["student"],
@@ -33,6 +36,7 @@ LOTS = [
     },
     {
         "id": "visitor-garage",
+        "position": (42.4463, -76.4801),
         "address": "Visitor Parking Garage, Campus Road, Ithaca, NY",
         "name": "Visitor Parking Garage",
         "permits": ["visitor"],
@@ -43,7 +47,23 @@ LOTS = [
 
 DESTINATIONS = ["Duffield Hall", "Statler Hotel", "Vet School"]
 
+# Approximate map positions (latitude, longitude) for drawing the fixture lots and destinations.
+# They are placed by hand near the named places, not surveyed, and no decision uses them.
+DESTINATION_POSITIONS = {
+    "Duffield Hall": (42.4446, -76.4823),
+    "Statler Hotel": (42.4457, -76.4817),
+    "Vet School": (42.4476, -76.4659),
+}
+
 # Addresses above are fixture text in the shape we expect from the map owner, not surveyed data.
+
+
+def map_view():
+    """Where to draw each lot and destination on the driver's map (UC.1.6). Display only."""
+    return {"lots": [{"pool_id": lot["id"], "name": lot["name"], "lat": lot["position"][0],
+                      "lon": lot["position"][1]} for lot in LOTS],
+            "destinations": [{"name": name, "lat": lat, "lon": lon}
+                             for name, (lat, lon) in DESTINATION_POSITIONS.items()]}
 
 
 def locations_and_routes(location_request):

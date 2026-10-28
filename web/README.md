@@ -1,11 +1,11 @@
 # Web interface
 
 Two pages, both served by `api/main.py`. Run the app and open them through it (opened as files, the
-fetch calls have nothing to talk to). Shared styles are in `static/style.css`.
+fetch calls have nothing to talk to). Shared styles are in `static/style.css`, page scripts in `static/driver.js` and `static/admin.js`. The visual direction, tokens and rules are in `DESIGN.md`.
 
-**`index.html` at `/`: the Campus Driver (UC.1).** The trip form goes in; the lots the driver's permit
-accepts, with places free for the whole stay, come back as cards. Each card shows the address, the
-walking estimate, a capacity bar and a "Why this option" list with the rule and trip facts F.4 used
+**`index.html` at `/`: the Campus Driver (UC.1).** A campus map sits beside the trip form: lots the permit allows show as blue P signs, the destination as a white pin, and the walk from a lot as a yellow dashed line (positions are approximate fixture data). The trip form goes in; the lots the driver's permit
+accepts, with places free for the whole stay, come back as P signs. Each sign shows the address, the
+walking estimate, one stall per place in the pool with the held ones filled, and a "Why this option" list with the rule and trip facts F.4 used
 (SR.3). Reserving gives a confirmation with its number, period, address and route guidance, or a
 warning that keeps the booking when guidance is unavailable (SR.16). "Find my booking" shows a
 confirmation again to the driver who made it (UC.1.10).
