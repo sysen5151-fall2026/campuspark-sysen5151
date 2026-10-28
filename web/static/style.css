@@ -163,7 +163,13 @@ body.find { height: 100vh; display: flex; flex-direction: column; overflow: hidd
 .detail.open { transform: none; }
 .detail .back { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 6px; width: 100%; padding: 14px 20px;
                 border: 0; background: rgba(255, 255, 255, .9); backdrop-filter: blur(12px); color: var(--blue); font-size: 15px; cursor: pointer; text-align: left; }
-.detail .cover { height: 220px; margin: 0 20px; border-radius: 20px; background-size: cover; background-position: center; background-color: #e5e5ea; }
+.cover-wrap { position: relative; margin: 0 20px; }
+.detail .cover { height: 230px; border-radius: 20px; background-size: cover; background-position: center; background-color: #e5e5ea; }
+.seg-toggle { position: absolute; right: 12px; bottom: 12px; display: flex; padding: 3px; border-radius: 999px;
+              background: rgba(20, 22, 28, .55); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.seg-toggle button { border: 0; background: transparent; color: #fff; font-size: 13px; font-weight: 500; padding: 5px 12px;
+                     border-radius: 999px; cursor: pointer; }
+.seg-toggle button[aria-selected="true"] { background: #fff; color: var(--ink); }
 .detail .body { padding: 18px 24px 120px; }
 .detail h2 { margin: 0; font-size: 28px; line-height: 1.1; letter-spacing: -0.035em; }
 .detail .addr { margin: 4px 0 0; color: var(--ink-3); font-size: 15px; }

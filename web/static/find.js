@@ -1,6 +1,6 @@
 // Search results: the list on the left, a live campus map on the right, lot details opening in place.
 // The map is a real map (OpenFreeMap tiles) with Cornell's real buildings raised from OpenStreetMap.
-import { api, esc, session, destinations, lotImageStyle } from "/static/common.js";
+import { api, esc, session, destinations, lotImageStyle, lotPhotoStyle } from "/static/common.js";
 
 const $ = id => document.getElementById(id);
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -90,7 +90,7 @@ function initMap() {
   map.addControl(new MapSwitches(), "top-right");
   ["dragstart", "zoomstart", "rotatestart", "pitchstart", "wheel"].forEach(ev => map.on(ev, e => { if (e.originalEvent) orbit = false; }));
   map.on("style.load", addWorld);
-  map.once("idle", () => $("map-loading")?.remove());
+  map.once("style.load", () => $("map-loading")?.remove());   // tiles then fade in; "idle" never fires while beams animate
   return new Promise(res => map.once("load", res));
 }
 
@@ -263,7 +263,7 @@ function renderList() {
   }
   $("results").innerHTML = opts.map(o => `
     <li class="res" data-lot="${esc(o.lot_id)}" tabindex="0">
-      <div class="thumb" style="${lotImageStyle(at(o.lot_id).lat, at(o.lot_id).lon, 336, 252)}"></div>
+      <div class="thumb" style="${lotPhotoStyle(o.lot_id, at(o.lot_id).lat, at(o.lot_id).lon, 336, 252)}"></div>
       <div>
         <h3>${esc(o.name)}</h3>
         <div class="meta">${esc(o.address || "Address unavailable")}</div>
@@ -271,7 +271,7 @@ function renderList() {
           <span><b>${o.remaining}</b> of ${o.capacity} free</span></div>
         <div class="${availClass(o)}"><i style="width:${Math.round(100 * o.remaining / o.capacity)}%"></i></div>
       </div>
-    </li>`).join("") + `<p class="credit">Aerial photos: USGS The National Map</p>`;
+    </li>`).join("") + `<p class="credit">Lot photos are illustrative. Open a lot for its real aerial view.</p>`;
   document.querySelectorAll(".res").forEach(li => {
     li.addEventListener("mouseenter", () => hot(li.dataset.lot));
     li.addEventListener("focus", () => hot(li.dataset.lot));
@@ -294,7 +294,13 @@ function openDetail(lotId) {
   }
   $("detail").innerHTML = `
     <button class="back" id="back" type="button">‹ All lots</button>
-    <div class="cover" style="${lotImageStyle(l?.lat, l?.lon, 880, 440)}"></div>
+    <div class="cover-wrap">
+      <div class="cover" id="cover" style="${lotPhotoStyle(lotId, l?.lat, l?.lon, 880, 440)}"></div>
+      <div class="seg-toggle" role="tablist" aria-label="Lot picture">
+        <button type="button" role="tab" aria-selected="true" data-view="photo">Photo</button>
+        <button type="button" role="tab" aria-selected="false" data-view="aerial">Aerial</button>
+      </div>
+    </div>
     <div class="body">
       <h2>${esc(o.name)}</h2>
       <p class="addr">${esc(o.address || "Address unavailable")}</p>
@@ -305,7 +311,7 @@ function openDetail(lotId) {
       </div>
       <div class="${availClass(o)}"><i style="width:${Math.round(100 * o.remaining / o.capacity)}%"></i></div>
       <div class="why"><h4>Why this lot was offered</h4><ul>${o.facts.map(f => `<li>${esc(f)}</li>`).join("")}</ul></div>
-      <p class="credit">Aerial photo: USGS The National Map. Lot names are pilot fixtures.</p>
+      <p class="credit" id="cover-credit">Illustrative photo, not the actual lot. Lot names are pilot fixtures.</p>
     </div>
     <div class="cta-dock">
       <button class="btn big" id="reserve" type="button">Reserve a place here</button>
@@ -313,6 +319,13 @@ function openDetail(lotId) {
     </div>`;
   $("detail").classList.add("open");
   $("back").addEventListener("click", closeDetail);
+  document.querySelectorAll(".seg-toggle button").forEach(b => b.addEventListener("click", () => {
+    const aerial = b.dataset.view === "aerial";
+    document.querySelectorAll(".seg-toggle button").forEach(x => x.setAttribute("aria-selected", String(x === b)));
+    $("cover").setAttribute("style", aerial ? lotImageStyle(l?.lat, l?.lon, 880, 440) : lotPhotoStyle(lotId, l?.lat, l?.lon, 880, 440));
+    $("cover-credit").textContent = aerial ? "Real aerial view: USGS The National Map (public domain). Lot names are pilot fixtures."
+                                           : "Illustrative photo, not the actual lot. Lot names are pilot fixtures.";
+  }));
   $("reserve").addEventListener("click", () => {
     session.pending = {trip, lot: {...o, lat: l?.lat, lon: l?.lon}, start: found.start, end: found.end, permit: found.permit,
                        search_id: found.search_id, request_id: crypto.randomUUID()};

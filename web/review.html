@@ -23,7 +23,7 @@
   <p style="text-align:center;margin-top:16px"><a id="change" href="/find">Change lot</a></p>
 </main>
 <script type="module">
-import { api, esc, session, recent, lotImageStyle } from "/static/common.js";
+import { api, esc, session, recent, lotPhotoStyle } from "/static/common.js";
 const $ = id => document.getElementById(id);
 const p = session.pending;
 if (!p) {
@@ -32,7 +32,7 @@ if (!p) {
   const back = `/find?${new URLSearchParams({to: p.trip.destination, at: p.trip.arrival, hours: p.trip.hours})}`;
   $("change").href = back;
   $("sheet").innerHTML = `
-    <div class="cover" style="${lotImageStyle(p.lot.lat, p.lot.lon, 1240, 360)}"></div>
+    <div class="cover" style="${lotPhotoStyle(p.lot.lot_id, p.lot.lat, p.lot.lon, 1240, 360)}"></div>
     <dl class="rows">
       <div><dt>Lot</dt><dd>${esc(p.lot.name)}</dd></div>
       <div><dt>Address</dt><dd>${esc(p.lot.address || "Unavailable")}</dd></div>

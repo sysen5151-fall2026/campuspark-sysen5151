@@ -43,6 +43,13 @@ export function lotAerial(lat, lon, w = 600, h = 400) {
     `bbox=${bbox}&bboxSR=4326&imageSR=3857&size=${w},${h}&format=jpg&f=image`;
 }
 
+// The lot's photo: an illustrative image generated for the pilot, with the real aerial underneath
+// as a fallback if the photo is missing.
+export function lotPhotoStyle(poolId, lat, lon, w, h) {
+  const aerial = lotAerial(lat, lon, w, h);
+  return `background-image:url('/static/media/lot-${poolId}.jpg'), ${aerial ? `url('${aerial}'), ` : ""}linear-gradient(135deg,#dfe3ea,#c8ced8)`;
+}
+
 export function lotImageStyle(lat, lon, w, h) {
   const aerial = lotAerial(lat, lon, w, h);
   return `background-image:${aerial ? `url('${aerial}'), ` : ""}linear-gradient(135deg,#dfe3ea,#c8ced8)`;

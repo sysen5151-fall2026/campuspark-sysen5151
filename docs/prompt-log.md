@@ -572,3 +572,11 @@ public domain; Google Maps imagery was not used because its terms do not allow r
 now defaults to a night style with amber availability beams (fill-extrusion, height by share free),
 pulsing glows, an arched walking trail with moving dashes and a travelling light, a camera fly-in and a
 slow orbit around an opened lot, plus a day/night switch.
+
+**Follow-up, same day: generated images added.** Hangting generated the hero, the three "how it works"
+tiles and four lot photos with GPT image generation from the prompt in this log's conversation; the
+generator's notes are kept in `web/static/media/generation-prompts.json`. They were compressed for the web
+(hero 2560 px, tiles 1200 px, lots 900 px) with `sips`. The lot photos are concept images, not the real
+facilities, so the pages label them "illustrative" and the lot details offer the real USGS aerial view
+beside them. The map's loading cover now lifts when the style arrives, since the animated beams keep the
+map from ever reporting "idle".
