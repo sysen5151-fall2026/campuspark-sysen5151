@@ -9,7 +9,7 @@ but the shape of the data is what we expect the real service to give us.
 LOTS = [
     {
         "id": "A-lot",
-        "position": (42.4558, -76.4746),
+        "position": (42.45635, -76.47756),
         "address": "A Lot, Jessup Road, Ithaca, NY",
         "name": "A Lot",
         "permits": ["student", "staff"],
@@ -18,7 +18,7 @@ LOTS = [
     },
     {
         "id": "hoy-garage",
-        "position": (42.4447, -76.4788),
+        "position": (42.44395, -76.47953),
         "address": "Hoy Road Garage, Hoy Road, Ithaca, NY",
         "name": "Hoy Road Garage",
         "permits": ["staff", "visitor"],
@@ -27,7 +27,7 @@ LOTS = [
     },
     {
         "id": "forest-home",
-        "position": (42.4512, -76.4712),
+        "position": (42.44876, -76.47264),
         "address": "Forest Home Drive lot, Forest Home Drive, Ithaca, NY",
         "name": "Forest Home Drive",
         "permits": ["student"],
@@ -36,7 +36,7 @@ LOTS = [
     },
     {
         "id": "visitor-garage",
-        "position": (42.4463, -76.4801),
+        "position": (42.44545, -76.48068),
         "address": "Visitor Parking Garage, Campus Road, Ithaca, NY",
         "name": "Visitor Parking Garage",
         "permits": ["visitor"],
@@ -47,12 +47,15 @@ LOTS = [
 
 DESTINATIONS = ["Duffield Hall", "Statler Hotel", "Vet School"]
 
-# Approximate map positions (latitude, longitude) for drawing the fixture lots and destinations.
-# They are placed by hand near the named places, not surveyed, and no decision uses them.
+# Map positions (latitude, longitude) for drawing the lots and destinations. No decision uses them.
+# Destinations and Hoy Road Garage are the real places in OpenStreetMap (Nominatim, 2026-10-28; the
+# Vet School point is Schurman Hall). The other fixture lots have no namesake in OpenStreetMap, so
+# each sits on the real parking area nearest to where it was first drawn (OSM ways 1106713124,
+# 625491206 and 1192681044).
 DESTINATION_POSITIONS = {
-    "Duffield Hall": (42.4446, -76.4823),
-    "Statler Hotel": (42.4457, -76.4817),
-    "Vet School": (42.4476, -76.4659),
+    "Duffield Hall": (42.44453, -76.48260),
+    "Statler Hotel": (42.44638, -76.48223),
+    "Vet School": (42.44795, -76.46615),
 }
 
 # Addresses above are fixture text in the shape we expect from the map owner, not surveyed data.

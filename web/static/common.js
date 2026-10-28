@@ -34,8 +34,18 @@ export const recent = {
   },
 };
 
-export function lotImage(poolId) {
-  return `/static/media/lot-${poolId}.jpg`;
+// A real aerial photo of the lot: USGS National Map imagery (public domain), cropped around the lot.
+export function lotAerial(lat, lon, w = 600, h = 400) {
+  if (lat == null || lon == null) return "";
+  const dLat = 0.0011, dLon = dLat * (w / h) / Math.cos(lat * Math.PI / 180);
+  const bbox = [lon - dLon, lat - dLat, lon + dLon, lat + dLat].join(",");
+  return "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/export?" +
+    `bbox=${bbox}&bboxSR=4326&imageSR=3857&size=${w},${h}&format=jpg&f=image`;
+}
+
+export function lotImageStyle(lat, lon, w, h) {
+  const aerial = lotAerial(lat, lon, w, h);
+  return `background-image:${aerial ? `url('${aerial}'), ` : ""}linear-gradient(135deg,#dfe3ea,#c8ced8)`;
 }
 
 export async function destinations() {

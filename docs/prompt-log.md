@@ -564,3 +564,11 @@ confirmed and opened the booking again by hand; staff page and phone width check
 **Follow-up, same day:** 3D only where it is real. The results map now tilts by default and raises
 Cornell's actual buildings from the OpenStreetMap footprints and heights already in the map tiles (a
 MapLibre fill-extrusion layer), with a 2D/3D switch. Nothing is modelled by hand.
+
+**Follow-up, same day:** real places and a game-map feel. Lot and destination pins moved to real
+OpenStreetMap positions (Hoy Road Garage and the destinations by name; the other fixture lots onto the
+nearest real parking area). Lot pictures are live aerial crops from USGS The National Map, which is
+public domain; Google Maps imagery was not used because its terms do not allow reuse. The results map
+now defaults to a night style with amber availability beams (fill-extrusion, height by share free),
+pulsing glows, an arched walking trail with moving dashes and a travelling light, a camera fly-in and a
+slow orbit around an opened lot, plus a day/night switch.

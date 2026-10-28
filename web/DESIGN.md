@@ -37,17 +37,20 @@ Type: the system San Francisco stack. Home headline 104px at 700 with tight trac
 ## Imagery
 
 Photographic images generated for the project (see `web/static/media/README.md`), never stock
-footage of real people or plates: a hero, three "how it works" tiles and one thumbnail per lot. Every
+footage of real people or plates: a hero and three "how it works" tiles. Lot pictures are real
+aerial photos from USGS (public domain), not generated. Every
 image slot has a gradient fallback, so the pages work before the images arrive.
 
 ## Map
 
-MapLibre GL with OpenFreeMap's Positron style (no key), tilted to 3D by default. The buildings are the
-real ones: OpenStreetMap footprints and heights from the tiles, raised with a fill-extrusion layer. No
-building is modelled or invented; where OSM has no height, a low default is used. A 2D/3D switch sits
-under the zoom buttons. Lots the permit allows are white pills showing
-the walk in minutes; the open lot turns black; lots outside the permit are small grey dots; the
-destination is a blue dot. The walk is a dashed blue line. Positions are approximate and the map says so.
+MapLibre GL with OpenFreeMap tiles (no key). Night style by default with a day switch, tilted to 3D.
+The buildings are the real ones: OpenStreetMap footprints and heights from the tiles, raised with a
+fill-extrusion layer. Lot and destination pins sit on real places from OpenStreetMap (Hoy Road Garage
+and the destinations by name; the other fixture lots on the nearest real parking area). Lots the permit
+allows raise an amber beam whose height is the share of places free and pulse a soft glow; the walk is
+an arched trail with moving dashes and a travelling light; the destination pings. Opening a lot flies
+the camera in and then orbits slowly until the driver touches the map. Lot photos are real aerials from
+USGS The National Map (public domain), cropped around each lot.
 
 ## Motion
 
