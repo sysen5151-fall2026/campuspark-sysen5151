@@ -2,51 +2,84 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CampusPark</title>
-<style>
-  body { font-family: -apple-system, Segoe UI, Arial, sans-serif; max-width: 640px;
-         margin: 40px auto; padding: 0 16px; color: #1c1c1c; line-height: 1.5; }
-  h1 { margin-bottom: 4px; }
-  .sub { color: #666; margin-top: 0; }
-  label { display: block; margin-top: 14px; font-size: 14px; }
-  input, select { width: 100%; padding: 8px; font-size: 15px; margin-top: 4px; box-sizing: border-box; }
-  button { margin-top: 18px; padding: 9px 18px; font-size: 15px; cursor: pointer; }
-  .option { border: 1px solid #ddd; padding: 12px; margin-top: 10px; }
-  .option h3 { margin: 0 0 4px; font-size: 16px; }
-  .meta { color: #555; font-size: 14px; }
-  .ok { border: 1px solid #2e6b3a; padding: 14px; margin-top: 18px; }
-  .err { color: #8c1c13; margin-top: 14px; }
-  .note { color: #666; font-size: 13px; margin-top: 8px; }
-</style>
+<link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 
-<h1>CampusPark</h1>
-<p class="sub">Find parking you're actually allowed to use, and hold it before you drive over.</p>
+<header class="bar">
+  <div class="wrap bar-inner">
+    <a class="brand" href="/"><span class="logo" aria-hidden="true">P</span> CampusPark</a>
+    <nav>
+      <a href="#find-booking">Find my booking</a>
+      <a href="/admin">Staff console</a>
+    </nav>
+  </div>
+</header>
 
-<label>Driver ID
-  <input id="driver" value="student01" autocomplete="off">
-</label>
-<label>Destination
-  <select id="destination"></select>
-</label>
-<label>Arrival time
-  <input id="arrival" type="time" value="09:00">
-</label>
-<label>How long (hours)
-  <input id="hours" type="number" value="2" min="1">
-</label>
+<main class="wrap">
+  <section class="hero">
+    <h1>Park where your permit is valid, and hold the place before you drive.</h1>
+    <p>Tell us where you're going and when. We check your permit, show the lots that accept it with places
+      still free, and hold one for you.</p>
+  </section>
 
-<button onclick="findParking()">Find parking</button>
+  <div class="grid">
+    <form class="card" id="trip" onsubmit="findParking(event)">
+      <h2>Your trip</h2>
+      <label for="driver">Driver ID</label>
+      <input id="driver" value="student01" autocomplete="off" required>
+      <p class="hint">Demo IDs: student01, staff01, visitor01</p>
 
-<div id="out" aria-live="polite"></div>
+      <label for="destination">Destination</label>
+      <select id="destination"></select>
+
+      <div class="row">
+        <div>
+          <label for="arrival">Arrival time</label>
+          <input id="arrival" type="time" value="09:00" required>
+        </div>
+        <div>
+          <label for="hours">Hours</label>
+          <input id="hours" type="number" value="2" min="1" max="15" required>
+        </div>
+      </div>
+
+      <button class="primary" type="submit">Find parking</button>
+    </form>
+
+    <section id="out" aria-live="polite">
+      <div class="empty">
+        <p class="empty-title">Your options appear here</p>
+        <p>Every option shows why it was offered: the permit rule, the places free for your whole stay and
+          the walking estimate.</p>
+      </div>
+    </section>
+  </div>
+
+  <section class="card narrow" id="find-booking">
+    <h2>Find my booking</h2>
+    <form class="inline" onsubmit="findBooking(event)">
+      <input id="lookup-id" placeholder="Confirmation number, e.g. RES-00001" required>
+      <input id="lookup-driver" placeholder="Driver ID" required>
+      <button type="submit">Show</button>
+    </form>
+    <div id="lookup-out" aria-live="polite"></div>
+  </section>
+</main>
+
+<footer class="wrap foot">
+  Pilot with fixture permit and map data. Places are held in CampusPark's booking records; nothing senses
+  an empty space.
+</footer>
 
 <script>
 const out = document.getElementById("out");
+let lastSearch = null;
 
-// Lot names and messages come from our own server, but escaping is cheap.
 function esc(s) {
-  return String(s).replace(/[&<>"']/g, c =>
+  return String(s ?? "").replace(/[&<>"']/g, c =>
     ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
 }
 
@@ -57,69 +90,106 @@ fetch("/api/destinations").then(r => r.json()).then(d => {
 
 function trip() {
   return {
-    driver_id: document.getElementById("driver").value,
+    driver_id: document.getElementById("driver").value.trim(),
     destination: document.getElementById("destination").value,
     arrival: document.getElementById("arrival").value,
     hours: Number(document.getElementById("hours").value)
   };
 }
 
-// FastAPI sends {detail: [...]} with a 422 when a field fails validation.
-// Before this, that response had no options list and the page just froze on
-// "Checking your permit...".
-async function post(url, body) {
-  const r = await fetch(url, {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify(body)
+async function call(url, body) {
+  const r = await fetch(url, body === undefined ? {} : {
+    method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)
   });
-  if (r.status === 422) {
-    return {error: "Check the form: arrival needs a time and the stay has to be at least one hour."};
-  }
-  if (!r.ok) {
-    return {error: "Something went wrong on our side. Nothing was booked."};
-  }
+  if (r.status === 422) return {error: "Check the form: arrival needs a time and the stay has to be at least one hour."};
+  if (!r.ok) return {error: "Something went wrong on our side. Nothing was booked."};
   return r.json();
 }
 
-function walkText(minutes) {
-  return minutes === null ? "walk time unavailable" : `about ${minutes} min walk (estimate)`;
+function walkText(m) {
+  return m === null ? "Walk time unavailable" : `About ${m} min walk`;
 }
 
-async function findParking() {
-  out.innerHTML = "Checking your permit...";
-  const res = await post("/api/options", trip());
+function bar(remaining, capacity) {
+  const pct = Math.max(4, Math.round(100 * remaining / capacity));
+  const tone = remaining / capacity < 0.2 ? "low" : "";
+  return `<div class="meter ${tone}" role="img" aria-label="${remaining} of ${capacity} places free">
+            <span style="width:${pct}%"></span></div>`;
+}
 
-  if (res.error) { out.innerHTML = `<p class="err">${esc(res.error)}</p>`; return; }
+async function findParking(e) {
+  e.preventDefault();
+  out.innerHTML = `<div class="card muted">Checking your permit and the lots near your destination...</div>`;
+  const res = await call("/api/options", trip());
+  if (res.error) { out.innerHTML = `<div class="card alert">${esc(res.error)}</div>`; return; }
+  lastSearch = {trip: trip(), search_id: res.search_id};
+
+  const head = `<div class="result-head">
+      <span class="pill">${esc(res.permit)} permit</span>
+      <span>${esc(lastSearch.trip.destination)} · ${esc(res.start)} to ${esc(res.end)}</span></div>`;
+
   if (!res.options.length) {
-    out.innerHTML = `<p class="err">Nothing bookable for a ${esc(res.permit)} permit from ${esc(res.start)} to ${esc(res.end)}.</p>`;
+    out.innerHTML = head + `<div class="card alert">Nothing bookable for this trip. ${esc(res.reason || "")}</div>`;
     return;
   }
-
-  out.innerHTML =
-    `<p class="meta">${res.options.length} option(s) your ${esc(res.permit)} permit covers, ${esc(res.start)} to ${esc(res.end)}</p>` +
-    res.options.map(o => `
-      <div class="option">
-        <h3>${esc(o.name)}</h3>
-        <div class="meta">${walkText(o.walk_minutes)} · ${o.remaining} of ${o.capacity} places not booked yet</div>
-        <button onclick="reserve('${esc(o.lot_id)}')">Reserve this one</button>
-      </div>`).join("") +
-    `<p class="note">${esc(res.capacity_basis)}</p>`;
+  out.innerHTML = head + res.options.map((o, i) => `
+    <article class="card option">
+      <div class="option-top">
+        <div>
+          <h3>${esc(o.name)}</h3>
+          <p class="addr">${esc(o.address || "Address unavailable")}</p>
+        </div>
+        ${i === 0 && o.walk_minutes !== null ? '<span class="pill green">Closest</span>' : ""}
+      </div>
+      <div class="stats">
+        <div><strong>${walkText(o.walk_minutes)}</strong><span>estimate</span></div>
+        <div><strong>${o.remaining} of ${o.capacity}</strong><span>places free all stay</span></div>
+      </div>
+      ${bar(o.remaining, o.capacity)}
+      <details><summary>Why this option</summary>
+        <ul>${o.facts.map(f => `<li>${esc(f)}</li>`).join("")}</ul></details>
+      <button class="primary" onclick="reserve(this, '${esc(o.lot_id)}')">Reserve ${esc(o.name)}</button>
+    </article>`).join("") + `<p class="note">${esc(res.capacity_basis)}</p>`;
 }
 
-async function reserve(lotId) {
-  const res = await post("/api/reserve", {...trip(), lot_id: lotId});
-
-  if (res.error) { out.innerHTML += `<p class="err">${esc(res.error)}</p>`; return; }
-
-  out.innerHTML = `
-    <div class="ok">
-      <strong>Reserved ${esc(res.lot)}</strong><br>
-      ${esc(res.start)} to ${esc(res.end)}<br>
-      Confirmation ${esc(res.confirmation)}<br>
-      ${esc(res.guidance)}
+function confirmationCard(res, title) {
+  return `<div class="card done">
+      <p class="eyebrow">${esc(title)}</p>
+      <h3>${esc(res.lot)}</h3>
+      <p class="code">${esc(res.confirmation)}</p>
+      <dl>
+        <dt>When</dt><dd>${esc(res.start)} to ${esc(res.end)}</dd>
+        <dt>Address</dt><dd>${esc(res.address)}</dd>
+        <dt>Getting there</dt><dd>${res.guidance ? esc(res.guidance) : "Route guidance unavailable"}</dd>
+      </dl>
+      ${res.warning ? `<p class="warn">${esc(res.warning)}</p>` : ""}
       <p class="note">${esc(res.note)}</p>
     </div>`;
+}
+
+async function reserve(button, lotId) {
+  button.disabled = true;
+  button.textContent = "Holding your place...";
+  const body = {...lastSearch.trip, lot_id: lotId, search_id: lastSearch.search_id,
+                request_id: crypto.randomUUID()};
+  const res = await call("/api/reserve", body);
+  if (res.error) {
+    button.disabled = false;
+    button.textContent = "Try again";
+    button.insertAdjacentHTML("beforebegin", `<p class="alert-line">${esc(res.error)}</p>`);
+    return;
+  }
+  out.innerHTML = confirmationCard(res, "Reserved") +
+    `<button class="link" onclick="document.getElementById('trip').requestSubmit()">Back to the options</button>`;
+}
+
+async function findBooking(e) {
+  e.preventDefault();
+  const id = encodeURIComponent(document.getElementById("lookup-id").value.trim());
+  const driver = encodeURIComponent(document.getElementById("lookup-driver").value.trim());
+  const res = await call(`/api/reservations/${id}?driver_id=${driver}`);
+  document.getElementById("lookup-out").innerHTML = res.error
+    ? `<p class="alert-line">${esc(res.error)}</p>` : confirmationCard(res, "Your booking");
 }
 </script>
 </body>

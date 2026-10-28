@@ -48,7 +48,7 @@ is C.5.3 Capacity Ledger (`functions/f5_3_commit_capacity_hold.py`).
 | Conduit | Transfers | Carried by |
 | --- | --- | --- |
 | Driver Web Interface | IO.1, IO.6, IO.7, IO.9, IO.13 | HTTP routes in `api/main.py` (`docs/route-table.md`) |
-| Administrator Console Interface | IO.10, IO.11, IO.12 | none yet; UC.2 has no entry point (planned) |
+| Administrator Console Interface | IO.10, IO.11, IO.12 | `web/admin.html` and `/api/admin/*` routes |
 | Permit Eligibility Data Link | IO.2, IO.3 | `integrations/permit/client.validate()` |
 | Map and Route Data Link | IO.4, IO.5 | `integrations/map/client.py` |
 | The eleven internal conduits | IO.8, IO.14 to IO.19 | in-process function calls, in the shapes of `contracts/api-v1.yaml` |
@@ -67,9 +67,13 @@ database, not on the conduits.
 
 ## Where this stands
 
-- The data access component exists and F.5 makes the same decisions on it as on the in-memory store.
-- The routes in `api/main.py` still use the Chapter 2 helpers in `api/` and their in-memory list.
-  Moving them onto `functions/` and the database means changing the reset fixture in
-  `tests/test_skeleton.py`, which the team should agree to first. That is the next step.
-- F.5 checks capacity and then saves, in two steps. Two drivers racing for the last place could both
-  pass the check. C.5.3 Capacity Ledger closes that gap (RS.1.4.3, RS.2.5).
+- The routes run the functions in `functions/` through `api/service.py`, in the order of each use
+  case (`docs/route-table.md`). Saved reservations are in `data/campuspark.db` and survive a restart;
+  set `CAMPUSPARK_DB` to use another file.
+- The approved rules (C.1) are still held in memory, so a change made in the staff console lasts
+  until the server restarts. Persisting them is the next data access step.
+- F.5 checks capacity and then saves. `api/service.py` serializes bookings with one lock so the two
+  steps cannot interleave between requests; C.5.3 Capacity Ledger, which does both in one step
+  (RS.1.4.3, RS.2.5), is built and tested but not yet on the booking path.
+- The staff check is the fixture account `admin01`, not a sign-in. Real staff accounts come from
+  Campus IT (2.1.4).

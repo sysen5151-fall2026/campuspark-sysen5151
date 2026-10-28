@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CampusPark Staff Console</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<header class="bar">
+  <div class="wrap bar-inner">
+    <a class="brand" href="/"><span class="logo" aria-hidden="true">P</span> CampusPark <span class="pill">Staff</span></a>
+    <nav><a href="/">Driver view</a></nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1>Parking controls</h1>
+    <p>Change a pool's capacity or close it for part of the day. Only approved staff accounts can make a
+      change; every accepted change applies to the next search and booking, and lists the bookings it affects.</p>
+  </section>
+
+  <section class="card">
+    <h2>Approved controls now in force <span class="pill" id="version"></span></h2>
+    <table>
+      <thead><tr><th>Pool</th><th>Permits accepted</th><th>Capacity</th><th>Closures today</th></tr></thead>
+      <tbody id="pools"></tbody>
+    </table>
+  </section>
+
+  <div class="grid">
+    <form class="card" onsubmit="submitChange(event)">
+      <h2>Make a change</h2>
+      <label for="account">Staff account</label>
+      <input id="account" value="admin01" autocomplete="off" required>
+      <p class="hint">Demo approved account: admin01</p>
+
+      <label for="pool">Pool</label>
+      <select id="pool"></select>
+
+      <label for="capacity">New capacity (leave blank to keep)</label>
+      <input id="capacity" type="number" min="0">
+
+      <label>Close the pool</label>
+      <div class="row" style="grid-template-columns: 1fr 1fr">
+        <input id="close-start" type="time" aria-label="Closure start">
+        <input id="close-end" type="time" aria-label="Closure end">
+      </div>
+      <label class="check"><input id="clear" type="checkbox"> Remove the existing closures first</label>
+
+      <button class="primary" type="submit">Apply change</button>
+    </form>
+
+    <section id="result" aria-live="polite">
+      <div class="empty">
+        <p class="empty-title">The result appears here</p>
+        <p>An accepted change shows the new rule version and every booking it touches, so staff can contact
+          those drivers. A booking is flagged, never cancelled.</p>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="wrap foot">Fixture data and a demo staff check. Real staff sign-in comes from Campus IT.</footer>
+
+<script>
+function esc(s) {
+  return String(s ?? "").replace(/[&<>"']/g, c =>
+    ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+}
+
+async function loadPools() {
+  const d = await (await fetch("/api/admin/pools")).json();
+  document.getElementById("version").textContent = `rules version ${d.version}`;
+  document.getElementById("pools").innerHTML = d.pools.map(p => `
+    <tr><td><strong>${esc(p.name)}</strong><br><span class="note">${esc(p.pool_id)}</span></td>
+        <td>${p.permits.map(x => `<span class="pill">${esc(x)}</span>`).join(" ")}</td>
+        <td>${p.capacity}</td>
+        <td>${p.closures.length ? p.closures.map(c => `${esc(c.start)}-${esc(c.end)}`).join(", ") : '<span class="note">none</span>'}</td></tr>`).join("");
+  const select = document.getElementById("pool");
+  const keep = select.value;
+  select.innerHTML = d.pools.map(p => `<option value="${esc(p.pool_id)}">${esc(p.name)}</option>`).join("");
+  if (keep) select.value = keep;
+}
+
+async function submitChange(e) {
+  e.preventDefault();
+  const capacity = document.getElementById("capacity").value;
+  const start = document.getElementById("close-start").value;
+  const end = document.getElementById("close-end").value;
+  const body = {
+    account: document.getElementById("account").value,
+    pool_id: document.getElementById("pool").value,
+    capacity: capacity === "" ? null : Number(capacity),
+    clear_closures: document.getElementById("clear").checked,
+    add_closure: start && end ? {start, end} : null
+  };
+  const r = await fetch("/api/admin/controls", {method: "POST", headers: {"Content-Type": "application/json"},
+                                                body: JSON.stringify(body)});
+  const out = document.getElementById("result");
+  if (!r.ok) { out.innerHTML = `<div class="card alert">Check the form: times need HH:MM and capacity a whole number.</div>`; return; }
+  const d = await r.json();
+  if (!d.accepted) {
+    out.innerHTML = `<div class="card alert"><strong>Change rejected.</strong> ${esc(d.reason)}</div>`;
+    return;
+  }
+  out.innerHTML = `<div class="card done">
+      <p class="eyebrow">Change applied</p>
+      <h3>Rules version ${d.version}</h3>
+      <p>${d.confirmed_count} confirmed booking(s) in this pool.
+         ${d.affected.length ? `${d.affected.length} of them overlap the change:` : "None of them overlap the change."}</p>
+      ${d.affected.length ? `<table><thead><tr><th>Confirmation</th><th>Driver</th><th>Booked</th></tr></thead><tbody>
+        ${d.affected.map(a => `<tr><td>${esc(a.reservation_id)}</td><td>${esc(a.driver_id)}</td><td>${esc(a.start)}-${esc(a.end)}</td></tr>`).join("")}
+      </tbody></table><p class="note">These bookings are kept. Contact the drivers about the change.</p>` : ""}
+    </div>`;
+  loadPools();
+}
+
+loadPools();
+</script>
+</body>
+</html>

@@ -431,3 +431,48 @@ corrected one. Both C.5.3 test files now run in CI.
 
 **Assistant assumptions:** see the generating session's 22 assumptions as summarized in the
 deviation log; none was accepted silently.
+
+---
+
+### 2026-10-28 · Hangting Zhu · Claude (Opus 5.5) · Chapter 8 wiring: the web app runs the model's functions
+
+**Asked for:** the next step recorded in `docs/deployment.md`: move the routes off the Chapter 2
+helpers onto `functions/` and the SQLite store, give UC.2 its entry points, and make the two pages
+usable enough to demonstrate.
+
+**Built from:** the first-level IDEF0 (the order of F.1 to F.7 in each use case), the route table,
+the contract shapes, and UC.1.10 and UC.2 in the model.
+
+**Produced:**
+
+- `api/service.py`: runs UC.1 search (F.2, permit system, F.3, map service, F.3, F.4), UC.1 booking
+  (F.2, permit system, F.5, F.6) and UC.2 changes (F.1, F.7), holding the rules store and the SQLite
+  reservation store. IO.16 from each search is kept until the booking so F.6 never looks the route up
+  twice (1.4.1.10).
+- `api/main.py`: the routes now only translate between the page and the functions. New entry points
+  for UC.1.10 (find a confirmation again, for its own driver only) and UC.2 (staff console, current
+  controls, apply a change).
+- `integrations/`: the permit stub answers IO.2 with IO.3; the map stub answers IO.4 with IO.5,
+  including fixture lot addresses.
+- `web/index.html`, `web/admin.html`, `web/static/style.css`: redesigned driver page with option cards,
+  "Why this option" facts, confirmation details and booking lookup; new staff console.
+- Removed `api/eligibility.py`, `api/ranking.py` and `api/reservations.py`, which duplicated rules
+  now in `functions/`.
+
+**Tests changed, and why:** `tests/test_skeleton.py` reset the old in-memory list and called the
+removed helpers directly. Its reset fixture now resets `api/service.py`, and the capacity tests book
+through `/api/reserve` so F.5 and the database make every decision. The behaviors checked are the same
+as before; one label check changed because a stay can no longer run past midnight (F.2). Nine new
+tests cover the new behavior: stays past midnight, finding a confirmation, a repeated request ID,
+route guidance reaching the confirmation, the warning when it cannot, a closure listing affected
+bookings, a capacity change applying to the next search, an unapproved staff account, and records
+surviving a restart.
+
+**Decisions the team should know about:** bookings are serialized with one lock in
+`api/service.py` until C.5.3 takes over the commitment; staff changes live in memory until the rules
+store is persisted; the staff check is the fixture account `admin01`, not a sign-in.
+
+**Checked:** skeleton 42 passed, functional requirements 11, contract conformance 11, data access 5,
+C.5.3 42, coverage 1; the 20 Chapter 3 placeholders still fail. The full UC.1 and UC.2 flows were run
+by hand in the browser: search, facts, booking, confirmation, and a closure that listed the booking it
+affected.

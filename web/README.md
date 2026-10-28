@@ -1,27 +1,23 @@
-# Driver interface
+# Web interface
 
-The Campus Driver side of UC.1. One page, `index.html`: the trip form goes in,
-a list of lots the driver's permit covers comes back, the driver picks one and
-sees the confirmation with the booked period.
+Two pages, both served by `api/main.py`. Run the app and open them through it (opened as files, the
+fetch calls have nothing to talk to). Shared styles are in `static/style.css`.
 
-The page is served by `api/main.py` at `/`, so run the app and open it there
-rather than opening the file directly. Opened as a file, the fetch calls have
-nothing to talk to.
+**`index.html` at `/`: the Campus Driver (UC.1).** The trip form goes in; the lots the driver's permit
+accepts, with places free for the whole stay, come back as cards. Each card shows the address, the
+walking estimate, a capacity bar and a "Why this option" list with the rule and trip facts F.4 used
+(SR.3). Reserving gives a confirmation with its number, period, address and route guidance, or a
+warning that keeps the booking when guidance is unavailable (SR.16). "Find my booking" shows a
+confirmation again to the driver who made it (UC.1.10).
 
-What it shows on purpose:
+**`admin.html` at `/admin`: the Parking Administrator (UC.2).** Shows the approved controls now in
+force, and applies a capacity change or a closure. An accepted change shows the new rule version and
+every confirmed booking it overlaps, which stay booked (SR.9); a change from an account that is not
+approved is rejected (SR.14).
 
-- walk times are labelled as estimates, and a lot with no estimate says so
-  instead of showing a number (SR.3)
-- capacity is shown as places not booked yet, with a line saying it comes from
-  our booking records and not from sensors
-- a blank or unknown ID, or a bad form value, gets a plain message instead of a
-  frozen page
+On purpose: walk times are labelled as estimates and a missing one says so; capacity is described as
+places in our booking records, never as sensed spaces; every refusal names its reason in plain words.
 
-What it doesn't do yet: anything after the booking (cancellation, history),
-dates, or a keyboard and screen-reader review for SR.12. The form uses native
-controls and announces results through a live region, which is a start, not
-the review.
-
-ORD requirements that land on this screen: 5.1.1.1 (session initiation),
-5.1.1.3 (customer input), 5.1.2.1 (welcome screen), 5.1.2.3 (requests for
-customer input), 5.1.2.5 (itinerary, here the parking options).
+Not done yet: dates (every booking is today), cancellation, a real staff sign-in, and a keyboard and
+screen-reader review for SR.12. The pages use native controls, labels and live regions, which is a
+start, not the review.

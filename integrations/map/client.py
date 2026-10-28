@@ -9,6 +9,7 @@ but the shape of the data is what we expect the real service to give us.
 LOTS = [
     {
         "id": "A-lot",
+        "address": "A Lot, Jessup Road, Ithaca, NY",
         "name": "A Lot",
         "permits": ["student", "staff"],
         "capacity": 40,
@@ -16,6 +17,7 @@ LOTS = [
     },
     {
         "id": "hoy-garage",
+        "address": "Hoy Road Garage, Hoy Road, Ithaca, NY",
         "name": "Hoy Road Garage",
         "permits": ["staff", "visitor"],
         "capacity": 25,
@@ -23,6 +25,7 @@ LOTS = [
     },
     {
         "id": "forest-home",
+        "address": "Forest Home Drive lot, Forest Home Drive, Ithaca, NY",
         "name": "Forest Home Drive",
         "permits": ["student"],
         "capacity": 15,
@@ -30,6 +33,7 @@ LOTS = [
     },
     {
         "id": "visitor-garage",
+        "address": "Visitor Parking Garage, Campus Road, Ithaca, NY",
         "name": "Visitor Parking Garage",
         "permits": ["visitor"],
         "capacity": 30,
@@ -38,6 +42,20 @@ LOTS = [
 ]
 
 DESTINATIONS = ["Duffield Hall", "Statler Hotel", "Vet School"]
+
+# Addresses above are fixture text in the shape we expect from the map owner, not surveyed data.
+
+
+def locations_and_routes(location_request):
+    """IO.4 in, IO.5 out: every lot with its address and walking estimate (UC.1.4, UC.1.5).
+
+    Only the destination is sent (SR.13). A missing estimate stays None so F.3 can mark it
+    unavailable instead of inventing one.
+    """
+    destination = (location_request or {}).get("destination")
+    return {"status": "ok",
+            "lots": [{"pool_id": lot["id"], "name": lot["name"], "address": lot["address"],
+                      "walk_minutes": lot["walk_minutes"].get(destination)} for lot in LOTS]}
 
 
 def lots_near(destination):

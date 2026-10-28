@@ -1,5 +1,12 @@
 # Tracing the code back to the model
 
+> **Status note (2026-10-28).** This file was written for Milestone Check 1 and describes the walking
+> skeleton as it stood then. Since the Chapter 8 wiring, the routes run the model's functions in
+> `functions/` through `api/service.py`, and `api/eligibility.py`, `api/ranking.py` and
+> `api/reservations.py` are gone. The administrator console now covers UC.2 (SR.8, SR.9 and the
+> approved-account check of SR.14 at developer-test level). Current code-to-model traces are in
+> `docs/traceability.md` and `docs/route-table.md`. Every acceptance test listed below is still red.
+
 Milestone Check 1 asks two things this file is meant to answer. Can a reviewer
 follow one stakeholder need through a requirement to the use case and then to
 the code that runs it. And is there any software in the repository that no
