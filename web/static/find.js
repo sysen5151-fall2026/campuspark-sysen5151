@@ -330,7 +330,7 @@ class MapSwitches {
     mode.addEventListener("click", () => {
       theme = theme === "night" ? "day" : "night";
       document.body.classList.toggle("map-day", theme === "day");
-      m.setStyle(STYLES[theme]);
+      m.setStyle(STYLES[theme], {diff: false});   // a full reload fires style.load, which puts the 3D layers back
       label();
     });
     m.on("pitchend", label);
@@ -464,6 +464,7 @@ function closeDetail() {
 async function search(intro) {
   $("results").innerHTML = `<div class="skeleton"></div><div class="skeleton"></div>`;
   $("detail").classList.remove("open");
+  document.querySelector(".side").classList.remove("has-detail");
   selected = null;
   setOrbit(false);
   const res = await api("/api/options", trip);

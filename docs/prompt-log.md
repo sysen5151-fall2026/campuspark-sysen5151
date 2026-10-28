@@ -608,3 +608,8 @@ keyboard), and the camera now keeps the floating panels as padding, so fly-ins a
 visible map. The generated lot photos were removed. No freely licensed photo of the fixture lots exists,
 so each lot shows a real Wikimedia Commons photo of a comparable campus lot or garage, labelled "Similar
 lot" with author and licence; the aerial tab still shows the actual spot.
+
+**Fix, same day.** Hangting saw a flat map and an empty results panel in Chrome. Two causes: switching
+day and night let MapLibre diff the styles, which drops the added layers without firing `style.load`, so
+the 3D buildings, beams and walk never came back (now a full reload with `diff: false`); and a new search
+while a lot card was open left the panel marked as showing details (now cleared on every search).
