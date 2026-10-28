@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CampusPark</title>
 <link rel="stylesheet" href="/static/style.css">
+<link rel="preload" as="image" href="/static/media/hero.avif" type="image/avif" fetchpriority="high">
 </head>
 <body class="home">
 
@@ -15,8 +16,12 @@
 
 <section class="hero">
   <div class="hero-media" aria-hidden="true">
-    <video id="hero-video" muted autoplay loop playsinline preload="none" poster="/static/media/hero.jpg" hidden></video>
-    <img id="hero-img" src="/static/media/hero.jpg" alt="" onerror="this.remove()">
+    <video id="hero-video" muted autoplay loop playsinline preload="none" hidden></video><!-- add data-film="/static/media/loop.mp4" to use a film -->
+    <picture id="hero-img">
+      <source srcset="/static/media/hero.avif" type="image/avif">
+      <source srcset="/static/media/hero.webp" type="image/webp">
+      <img src="/static/media/hero.jpg" alt="" fetchpriority="high" decoding="async" onerror="this.parentElement.remove()">
+    </picture>
   </div>
   <h1>Your place<br>is waiting.</h1>
   <p class="lede">Lots your permit allows, with room for your whole stay. Held before you leave.</p>
@@ -69,12 +74,25 @@ $("destination").innerHTML = (await destinations()).map(d => `<option>${esc(d)}<
 $("driver").value = session.driver;
 stepper($("hours-step"), 1, 15);
 document.querySelectorAll(".seg[data-focus]").forEach(s => s.addEventListener("click", () => $(s.dataset.focus).focus()));
-// a looping film is used when one has been added to static/media
-fetch("/static/media/loop.mp4", {method: "HEAD"}).then(r => {
-  if (r.ok && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    const v = $("hero-video"); v.src = "/static/media/loop.mp4"; v.hidden = false; $("hero-img")?.remove();
+// a looping film plays instead of the still when the video tag names one (data-film); no request otherwise
+const film = $("hero-video").dataset.film;
+if (film && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  // the poster is set here, not in the markup, because a poster loads even while the video is hidden
+  const v = $("hero-video"); v.poster = $("hero-img")?.querySelector("img").currentSrc || ""; v.src = film; v.hidden = false; $("hero-img")?.remove();
+}
+// once the page is idle, fetch the map library the results page needs, so the next page opens faster
+const idle = window.requestIdleCallback || (f => setTimeout(f, 1500));
+addEventListener("load", () => idle(() => {
+  for (const [rel, as, href] of [["prefetch", "script", "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"],
+                                 ["prefetch", "style", "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css"],
+                                 ["preconnect", "", "https://tiles.openfreemap.org"]]) {
+    const l = document.createElement("link");
+    Object.assign(l, {rel, href});
+    if (as) l.as = as;
+    if (rel === "preconnect") l.crossOrigin = "anonymous";
+    document.head.appendChild(l);
   }
-}).catch(() => {});
+}));
 $("search").addEventListener("submit", e => {
   e.preventDefault();
   session.driver = $("driver").value.trim();

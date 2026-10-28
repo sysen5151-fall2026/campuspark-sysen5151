@@ -67,6 +67,17 @@ right: turn left, a compass that shows the heading and turns back to north, turn
 floating panels as padding, so fly-ins and rotation centre on the visible map. Lot photos are real aerials from
 USGS The National Map (public domain), cropped around each lot.
 
+## Weight
+
+Each picture is sent at the size it is drawn and in the lightest format the browser reads (AVIF, then
+WebP, then JPEG): the home page's first screen is one 240 KB hero, the tiles load as they near the
+screen, blurred backdrops use 360 px copies, and lot photos come from Commons at 330 px in the list,
+960 px in the card and 1280 px on the review page. The aerial is fetched only when a card opens. Text
+responses are gzipped; images are cached for a week. The home page fetches the map library while idle,
+and the results page opens its connections to the tile and photo servers as it starts. On the map,
+data is sent to the map only when it changes; the glow's pulse and the travelling light run on feature
+state, so an idle map does no re-tiling.
+
 ## Motion
 
 Small and purposeful: the hero text rises in once, the hero image settles from a slight zoom, the

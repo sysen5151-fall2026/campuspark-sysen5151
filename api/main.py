@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from fastapi import FastAPI
+from starlette.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -22,13 +23,37 @@ from integrations.map import client as map_client
 app = FastAPI(title="CampusPark")
 
 
+MEDIA = "/static/media/"
+
+
 @app.middleware("http")
 async def revalidate_pages(request, call_next):
-    """Pages and their scripts change with every increment; make browsers check before reusing them."""
+    """Pages and their scripts change with every increment; make browsers check before reusing them
+    (an unchanged file comes back as a bodiless 304). Images change rarely and are the heaviest files,
+    so browsers keep them for a week; a replaced image should get a new file name."""
     response = await call_next(request)
-    if not request.url.path.startswith("/api/"):
+    if request.url.path.startswith(MEDIA):
+        response.headers["Cache-Control"] = "public, max-age=604800"
+    elif not request.url.path.startswith("/api/"):
         response.headers["Cache-Control"] = "no-cache"
     return response
+
+
+class CompressText:
+    """Gzip pages, styles, scripts and JSON. Images are already compressed, so they pass through."""
+
+    def __init__(self, app):
+        self.app = app
+        self.gzip = GZipMiddleware(app, minimum_size=1024)
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http" and not scope["path"].startswith(MEDIA):
+            await self.gzip(scope, receive, send)
+        else:
+            await self.app(scope, receive, send)
+
+
+app.add_middleware(CompressText)
 
 WEB = Path(__file__).resolve().parents[1] / "web"
 app.mount("/static", StaticFiles(directory=WEB / "static"), name="static")

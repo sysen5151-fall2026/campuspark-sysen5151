@@ -613,3 +613,15 @@ lot" with author and licence; the aerial tab still shows the actual spot.
 day and night let MapLibre diff the styles, which drops the added layers without firing `style.load`, so
 the 3D buildings, beams and walk never came back (now a full reload with `diff: false`); and a new search
 while a lot card was open left the panel marked as showing details (now cleared on every search).
+
+**Follow-up, same day: lighter pages, same look.** Hangting asked for faster loading without losing
+quality. Measured first: the home page sent about 1.8 MB (a 687 KB hero, which a hidden video's poster
+also fetched, and 1.1 MB of tiles below the fold); the results page fetched 960 px photos for 128 px
+thumbnails (360 KB) plus a hidden USGS aerial behind each card (0.5 to 0.7 s each); CSS and JS went
+uncompressed; and the map animation re-sent four GeoJSON sources to the map worker every frame. Changes:
+AVIF and WebP copies encoded from the originals (hero 240 KB, tiles 30 to 94 KB, checked at 1:1), tiles
+deferred with `content-visibility`, 360 px backdrops behind the blur, Commons photos at the drawn size,
+no hidden aerial layer, gzip for text, a week's cache for images, idle prefetch of the map library and
+preconnects, and a map loop that sends data only on change with the pulse and travelling light on
+feature state. The hidden video was also found to take the hero's place in the layout; it is now hidden
+properly and the film is opt-in. The home page's first screen is now about 245 KB.

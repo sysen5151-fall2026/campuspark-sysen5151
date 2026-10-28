@@ -1,6 +1,6 @@
 // Search results: the list on the left, a live campus map on the right, lot details opening in place.
 // The map is a real map (OpenFreeMap tiles) with Cornell's real buildings raised from OpenStreetMap.
-import { api, esc, session, destinations, lotImageStyle, lotPhotoStyle, lotPhotoCredit } from "/static/common.js";
+import { api, esc, session, destinations, lotImageStyle, lotPhotoStyle, lotPhotoCredit, lotPhotoUrl } from "/static/common.js";
 
 const $ = id => document.getElementById(id);
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -19,6 +19,9 @@ let found = null, map = null, markers = {}, destMarker = null;
 let selected = null, hovered = null, orbit = false, orbitRate = 2, spinBtn = null;   // orbit in degrees a second
 const beams = {};      // lot id -> {now, target} heights in metres
 let walk = null;       // {coords, t0} for the arched trail being shown
+// The animation sends new map data only when something changes. The glow's pulse and the travelling
+// light run on feature state, which the map applies on the main thread without re-tiling any data.
+let beamKey = "", glowPhases = [];
 
 /* ------------------------------------------------------------------ geometry */
 function circle(lon, lat, metres, steps = 40) {
@@ -75,8 +78,10 @@ function addWorld() {
     },
   }, firstLabel);
   map.addSource("glow", {type: "geojson", data: empty});
+  const pulse = ["number", ["feature-state", "pulse"], 0.5];
   map.addLayer({id: "glow", type: "circle", source: "glow", paint: {
-    "circle-radius": ["get", "r"], "circle-color": AMBER, "circle-blur": 1, "circle-opacity": ["get", "o"]}});
+    "circle-radius": ["+", 26, ["*", 14, pulse]], "circle-color": AMBER, "circle-blur": 1,
+    "circle-opacity": ["+", 0.28, ["*", 0.2, pulse]]}});
   map.addSource("beams", {type: "geojson", data: empty});
   map.addLayer({id: "beams", type: "fill-extrusion", source: "beams", paint: {
     "fill-extrusion-color": ["get", "color"], "fill-extrusion-height": ["get", "h"], "fill-extrusion-base": 0,
@@ -87,9 +92,12 @@ function addWorld() {
   map.addLayer({id: "walk", type: "line", source: "walk", layout: {"line-cap": "round", "line-join": "round"},
                 paint: {"line-width": 4, "line-color": night ? "#ffe2b0" : "#0071e3", "line-dasharray": [0, 2, 2]}});
   map.addSource("comet", {type: "geojson", data: empty});
+  const lit = ["case", ["boolean", ["feature-state", "on"], false], 1, 0];
   map.addLayer({id: "comet", type: "circle", source: "comet", paint: {
     "circle-radius": 7, "circle-color": "#ffffff", "circle-blur": 0.4, "circle-stroke-width": 6,
-    "circle-stroke-color": night ? "rgba(255,181,71,.45)" : "rgba(0,113,227,.35)"}});
+    "circle-stroke-color": night ? "rgba(255,181,71,.45)" : "rgba(0,113,227,.35)",
+    "circle-opacity": lit, "circle-stroke-opacity": lit}});
+  beamKey = "";
   drawBeams(true);
   if (walk) setWalk(walk.lot, false);
 }
@@ -120,35 +128,48 @@ function drawBeams(instant) {
     b.target = o ? 40 + 160 * (o.remaining / o.capacity) : 0;
     if (instant || reduced) b.now = b.target;
   });
+  // one glow per lot the permit allows; its pulse is set each frame through feature state
+  const glowing = Object.values(geo.lots).filter(l => allowed[l.pool_id]);
+  glowPhases = glowing.map(l => l.lat * 900);
+  map.getSource("glow").setData({type: "FeatureCollection", features: glowing.map((l, id) =>
+    ({type: "Feature", id, properties: {}, geometry: {type: "Point", coordinates: [l.lon, l.lat]}}))});
 }
 
 function beamFrame(t) {
-  const allowed = Object.fromEntries((found?.options || []).map(o => [o.lot_id, o]));
-  const feats = [], glows = [];
+  if (!map.getSource("beams")) return;
   // beams keep a similar size on screen: shorter as the camera comes closer
   const scale = Math.min(1.2, Math.max(0.18, Math.pow(2, 14.6 - map.getZoom())));
-  Object.values(geo.lots).forEach(l => {
-    const b = beams[l.pool_id];
-    if (!b) return;
-    b.now += (b.target - b.now) * 0.06;
-    if (b.now < 0.5) return;
-    const on = l.pool_id === selected || l.pool_id === hovered;
-    feats.push({type: "Feature", properties: {h: b.now * scale, color: on ? "#ffc65a" : "#ff9a1f"},
-                geometry: {type: "Polygon", coordinates: circle(l.lon, l.lat, on ? 24 : 19)}});
-    const pulse = reduced ? 0.5 : 0.5 + 0.5 * Math.sin(t / 520 + l.lat * 900);
-    if (allowed[l.pool_id]) glows.push({type: "Feature", properties: {r: 26 + 14 * pulse, o: 0.28 + 0.2 * pulse},
-                                        geometry: {type: "Point", coordinates: [l.lon, l.lat]}});
+  let rising = false;
+  Object.values(beams).forEach(b => {
+    const gap = b.target - b.now;
+    if (Math.abs(gap) > 0.3) { b.now += gap * 0.06; rising = true; } else b.now = b.target;
   });
-  map.getSource("beams")?.setData({type: "FeatureCollection", features: feats});
-  map.getSource("glow")?.setData({type: "FeatureCollection", features: glows});
+  const key = `${scale.toFixed(3)}|${selected}|${hovered}`;
+  if (rising || key !== beamKey) {
+    beamKey = key;
+    const feats = [];
+    Object.values(geo.lots).forEach(l => {
+      const b = beams[l.pool_id];
+      if (!b || b.now < 0.5) return;
+      const on = l.pool_id === selected || l.pool_id === hovered;
+      feats.push({type: "Feature", properties: {h: b.now * scale, color: on ? "#ffc65a" : "#ff9a1f"},
+                  geometry: {type: "Polygon", coordinates: circle(l.lon, l.lat, on ? 24 : 19)}});
+    });
+    map.getSource("beams").setData({type: "FeatureCollection", features: feats});
+  }
+  if (!reduced) glowPhases.forEach((phase, id) => map.setFeatureState({source: "glow", id}, {pulse: 0.5 + 0.5 * Math.sin(t / 520 + phase)}));
 }
 
 function setWalk(lotId, animate = true) {
   const l = geo.lots[lotId], d = geo.dests[trip.destination];
   if (!map?.getSource("walk")) { walk = l && d ? {lot: lotId} : null; return; }
+  map.removeFeatureState({source: "comet"});
   if (!l || !d) { walk = null; map.getSource("walk").setData(empty); map.getSource("comet").setData(empty); return; }
   const coords = arch([l.lon, l.lat], [d.lon, d.lat]);
-  walk = {lot: lotId, coords, t0: performance.now(), grow: animate && !reduced};
+  walk = {lot: lotId, coords, t0: performance.now(), grow: animate && !reduced, drawn: 0, star: -1};
+  // every point of the arch, unlit; the travelling light lights one at a time
+  map.getSource("comet").setData({type: "FeatureCollection", features: coords.map((c, id) =>
+    ({type: "Feature", id, properties: {}, geometry: {type: "Point", coordinates: c}}))});
 }
 
 let dashStep = 0;
@@ -157,15 +178,18 @@ function walkFrame(t) {
   if (!walk?.coords || !map?.getSource("walk")) return;
   const grow = walk.grow ? Math.min(1, (t - walk.t0) / 900) : 1;
   const n = Math.max(2, Math.round(walk.coords.length * grow));
-  map.getSource("walk").setData({type: "Feature", geometry: {type: "LineString", coordinates: walk.coords.slice(0, n)}});
-  if (!reduced) {
-    const step = Math.floor(t / 90) % DASHES.length;
-    if (step !== dashStep) { dashStep = step; map.setPaintProperty("walk", "line-dasharray", DASHES[step]); }
-    const k = ((t - walk.t0) / 2600) % 1;
-    const p = walk.coords[Math.floor(k * (walk.coords.length - 1))];
-    map.getSource("comet").setData({type: "Feature", geometry: {type: "Point", coordinates: p}});
-  } else {
-    map.getSource("comet").setData(empty);
+  if (n !== walk.drawn) {   // the line changes only while it grows
+    walk.drawn = n;
+    map.getSource("walk").setData({type: "Feature", geometry: {type: "LineString", coordinates: walk.coords.slice(0, n)}});
+  }
+  if (reduced) return;
+  const step = Math.floor(t / 90) % DASHES.length;
+  if (step !== dashStep) { dashStep = step; map.setPaintProperty("walk", "line-dasharray", DASHES[step]); }
+  const k = Math.floor((((t - walk.t0) / 2600) % 1) * (walk.coords.length - 1));
+  if (k !== walk.star) {
+    if (walk.star >= 0) map.setFeatureState({source: "comet", id: walk.star}, {on: false});
+    map.setFeatureState({source: "comet", id: k}, {on: true});
+    walk.star = k;
   }
 }
 
@@ -358,7 +382,7 @@ function renderList() {
     const tags = [i === 0 && o.walk_minutes !== null ? "Closest walk" : "", o === most && opts.length > 1 ? "Most room" : ""].filter(Boolean);
     return `
     <li class="res" data-lot="${esc(o.lot_id)}" tabindex="0">
-      <div class="thumb" style="${lotPhotoStyle(o.lot_id, at(o.lot_id).lat, at(o.lot_id).lon, 336, 252)}"></div>
+      <div class="thumb" style="${lotPhotoStyle(o.lot_id, 256)}"></div>
       <div class="res-body">
         ${tags.length ? `<div class="tags">${tags.map(t => `<span>${t}</span>`).join("")}</div>` : ""}
         <h3>${esc(o.name)}</h3>
@@ -395,8 +419,8 @@ function openDetail(lotId) {
   $("detail").innerHTML = `
     <div class="media" id="media">
       <div class="slides" id="slides">
-        <div class="slide" style="${lotPhotoStyle(lotId, l?.lat, l?.lon, 960, 560)}"></div>
-        <div class="slide" style="${lotImageStyle(l?.lat, l?.lon, 960, 560)}"></div>
+        <div class="slide" style="${lotPhotoStyle(lotId, 900)}"></div>
+        <div class="slide" id="aerial-slide"></div>
       </div>
       <button class="fab" id="back" type="button" aria-label="Back to all lots">${ICON.back}</button>
       <div class="media-tabs" role="tablist" aria-label="Lot picture">
@@ -435,7 +459,11 @@ function openDetail(lotId) {
   $("detail").classList.add("open");
   document.querySelector(".side").classList.add("has-detail");
   $("back").addEventListener("click", closeDetail);
+  // the aerial is drawn on demand by a slow map server, so it is fetched only once the card has settled
+  const loadAerial = () => { const s = $("aerial-slide"); if (s && !s.style.backgroundImage) s.setAttribute("style", lotImageStyle(l?.lat, l?.lon, 960, 560)); };
+  setTimeout(loadAerial, 1200);
   const showSlide = n => {
+    if (n) loadAerial();
     $("slides").style.transform = `translateX(${-50 * n}%)`;
     document.querySelectorAll(".media-tabs button").forEach(b => b.setAttribute("aria-selected", String(+b.dataset.slide === n)));
     $("media-credit").innerHTML = n ? "This exact spot from above · USGS, public domain" : lotPhotoCredit(lotId);
@@ -444,6 +472,8 @@ function openDetail(lotId) {
   let x0 = null;
   $("media").addEventListener("pointerdown", e => { x0 = e.clientX; });
   $("media").addEventListener("pointerup", e => { if (x0 !== null && Math.abs(e.clientX - x0) > 40) showSlide(e.clientX < x0 ? 1 : 0); x0 = null; });
+  // the review page shows the same photo larger: start fetching it as the pointer reaches Reserve
+  $("reserve").addEventListener("pointerenter", () => { new Image().src = lotPhotoUrl(lotId, 1240); }, {once: true});
   $("reserve").addEventListener("click", () => {
     session.pending = {trip, lot: {...o, lat: l?.lat, lon: l?.lon}, start: found.start, end: found.end, permit: found.permit,
                        search_id: found.search_id, request_id: crypto.randomUUID()};

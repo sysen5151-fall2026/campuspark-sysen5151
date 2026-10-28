@@ -5,9 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Review your booking · CampusPark</title>
 <link rel="stylesheet" href="/static/style.css">
+<link rel="preconnect" href="https://upload.wikimedia.org">
 </head>
 <body class="glass-page">
-<div class="backdrop" style="--img:url('/static/media/held.jpg')" aria-hidden="true"><i></i><i></i></div>
+<div class="backdrop" style="--img:url('/static/media/held-bg.jpg')" aria-hidden="true"><i></i><i></i></div>
 <header class="bar">
   <a class="mark" href="/"><i>P</i>CampusPark</a>
   <nav><a href="/bookings">My bookings</a><a href="/admin">Staff</a></nav>
@@ -33,7 +34,7 @@ if (!p) {
   const back = `/find?${new URLSearchParams({to: p.trip.destination, at: p.trip.arrival, hours: p.trip.hours})}`;
   $("change").href = back;
   $("sheet").innerHTML = `
-    <div class="cover" style="${lotPhotoStyle(p.lot.lot_id, p.lot.lat, p.lot.lon, 1240, 360)}"></div>
+    <div class="cover" style="${lotPhotoStyle(p.lot.lot_id, 1240)}"></div>
     <p class="cover-credit">${lotPhotoCredit(p.lot.lot_id)}</p>
     <dl class="rows">
       <div><dt>Lot</dt><dd>${esc(p.lot.name)}</dd></div>

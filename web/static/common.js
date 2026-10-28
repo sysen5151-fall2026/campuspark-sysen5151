@@ -62,10 +62,11 @@ export const LOT_PHOTOS = {
                      page: "https://commons.wikimedia.org/wiki/File:VSU_Oak_St_Parking_Deck_5.jpg"},
 };
 
+// w is the widest the photo is drawn, in device pixels; Commons serves these standard widths
 export function lotPhotoUrl(poolId, w) {
   const p = LOT_PHOTOS[poolId];
   if (!p) return "";
-  const size = w > 960 ? 1920 : 960;   // Commons serves these standard widths
+  const size = [330, 500, 960, 1280].find(s => s >= w) || 1920;
   return `${COMMONS}${p.path}/${size}px-${p.path.split("/").pop()}`;
 }
 
@@ -74,10 +75,10 @@ export function lotPhotoCredit(poolId) {
   return p ? `Similar lot: <a href="${p.page}" target="_blank" rel="noopener">${esc(p.place)}</a> · ${esc(p.by)}, ${esc(p.license)}` : "";
 }
 
-// The lot's photo, with the real aerial underneath if the photo cannot load.
-export function lotPhotoStyle(poolId, lat, lon, w, h) {
-  const aerial = lotAerial(lat, lon, w, h), photo = lotPhotoUrl(poolId, w);
-  return `background-image:${photo ? `url('${photo}'), ` : ""}${aerial ? `url('${aerial}'), ` : ""}linear-gradient(135deg,#2a2f3a,#161a22)`;
+// The lot's photo over a plain gradient. (A layer underneath would be downloaded even when hidden.)
+export function lotPhotoStyle(poolId, w) {
+  const photo = lotPhotoUrl(poolId, w);
+  return `background-image:${photo ? `url('${photo}'), ` : ""}linear-gradient(135deg,#2a2f3a,#161a22)`;
 }
 
 export function lotImageStyle(lat, lon, w, h) {
