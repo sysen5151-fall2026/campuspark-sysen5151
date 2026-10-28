@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Review your booking · CampusPark</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="bar">
+  <a class="mark" href="/"><i>P</i>CampusPark</a>
+  <nav><a href="/bookings">My bookings</a><a href="/admin">Staff</a></nav>
+</header>
+<main class="narrow" id="main">
+  <p class="steps">Choose a lot <span>›</span> <b>Review</b> <span>›</span> Confirmed</p>
+  <h1>Review your booking.</h1>
+  <p class="lede">Nothing is held until you confirm. We check your permit and the lot once more when you do.</p>
+  <div class="sheet" id="sheet"></div>
+  <p class="policy">The place is held in CampusPark's records for the period above. If staff close the lot or cut its places,
+    your booking stays and they will contact you. Cancelling is not available in this pilot.</p>
+  <button class="btn big full" id="confirm" type="button">Confirm and hold this place</button>
+  <div id="error" aria-live="assertive"></div>
+  <p style="text-align:center;margin-top:16px"><a id="change" href="/find">Change lot</a></p>
+</main>
+<script type="module">
+import { api, esc, session, recent, lotImage } from "/static/common.js";
+const $ = id => document.getElementById(id);
+const p = session.pending;
+if (!p) {
+  $("main").innerHTML = `<h1>Nothing to review.</h1><p class="lede">Start with a search to choose a lot.</p><a class="btn" href="/">Find parking</a>`;
+} else {
+  const back = `/find?${new URLSearchParams({to: p.trip.destination, at: p.trip.arrival, hours: p.trip.hours})}`;
+  $("change").href = back;
+  $("sheet").innerHTML = `
+    <div class="cover" style="background-image:url('${lotImage(p.lot.lot_id)}'), linear-gradient(135deg,#dfe3ea,#c8ced8)"></div>
+    <dl class="rows">
+      <div><dt>Lot</dt><dd>${esc(p.lot.name)}</dd></div>
+      <div><dt>Address</dt><dd>${esc(p.lot.address || "Unavailable")}</dd></div>
+      <div><dt>When</dt><dd>Today, ${esc(p.start)} to ${esc(p.end)}</dd></div>
+      <div><dt>Going to</dt><dd>${esc(p.trip.destination)}, about ${p.lot.walk_minutes ?? "–"} min walk</dd></div>
+      <div><dt>Permit</dt><dd><span style="text-transform:capitalize">${esc(p.permit)}</span>, checked for this lot</dd></div>
+      <div><dt>Driver</dt><dd>${esc(p.trip.driver_id)}</dd></div>
+    </dl>`;
+  $("confirm").addEventListener("click", async () => {
+    $("confirm").disabled = true;
+    $("confirm").textContent = "Holding your place…";
+    $("error").innerHTML = "";
+    const res = await api("/api/reserve", {...p.trip, lot_id: p.lot.lot_id, search_id: p.search_id, request_id: p.request_id});
+    if (res.error) {
+      $("confirm").disabled = false;
+      $("confirm").textContent = "Try again";
+      $("error").innerHTML = `<p class="err">${esc(res.error)} <a href="${back}">Choose another lot</a></p>`;
+      return;
+    }
+    recent.add({id: res.confirmation, lot: res.lot, start: res.start, end: res.end, driver: p.trip.driver_id});
+    session.put("cp.justBooked", res.confirmation);
+    session.pending = null;
+    location.href = `/booking/${encodeURIComponent(res.confirmation)}`;
+  });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parking near you · CampusPark</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="find">
+
+<header class="bar">
+  <a class="mark" href="/"><i>P</i>CampusPark</a>
+  <nav><a href="/bookings">My bookings</a><a href="/admin">Staff</a></nav>
+</header>
+
+<form class="summary" id="search" aria-label="Change your trip">
+  <div class="chips">
+    <div class="chip"><label for="driver">Driver</label><input id="driver" size="9" required autocomplete="off"></div>
+    <div class="chip"><label for="destination">Going to</label><select id="destination"></select></div>
+    <div class="chip"><label for="arrival">Arriving</label><input id="arrival" type="time" required></div>
+    <div class="chip"><label for="hours">Hours</label><input id="hours" type="number" min="1" max="15" required></div>
+  </div>
+  <button class="btn" type="submit">Update</button>
+  <span class="permit" id="permit"></span>
+</form>
+
+<div class="split">
+  <aside class="side" aria-live="polite">
+    <div class="side-head"><h1 id="title">Finding lots…</h1><p id="subtitle"></p></div>
+    <ol class="results" id="results"><div class="skeleton"></div><div class="skeleton"></div></ol>
+    <section class="detail" id="detail" aria-label="Lot details"></section>
+  </aside>
+  <div class="mapwrap">
+    <div id="map" role="img" aria-label="Map of the lots and your destination"></div>
+    <p class="map-note">Lot positions are approximate</p>
+  </div>
+</div>
+
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script type="module" src="/static/find.js"></script>
+</body>
+</html>

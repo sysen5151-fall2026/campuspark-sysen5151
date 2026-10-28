@@ -106,6 +106,30 @@ def home():
     return FileResponse(WEB / "index.html")
 
 
+@app.get("/find")
+def find_page():
+    """UC.1.1 to UC.1.6: search results with the list and the map."""
+    return FileResponse(WEB / "find.html")
+
+
+@app.get("/review")
+def review_page():
+    """UC.1.7: the driver checks the booking before committing it."""
+    return FileResponse(WEB / "review.html")
+
+
+@app.get("/booking/{reservation_id}")
+def booking_page(reservation_id: str):
+    """UC.1.9 and UC.1.10: the confirmation and pass for one booking."""
+    return FileResponse(WEB / "booking.html")
+
+
+@app.get("/bookings")
+def bookings_page():
+    """UC.1.10: find a booking again."""
+    return FileResponse(WEB / "bookings.html")
+
+
 @app.get("/admin")
 def admin_page():
     return FileResponse(WEB / "admin.html")

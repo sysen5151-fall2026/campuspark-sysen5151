@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My bookings · CampusPark</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="bar">
+  <a class="mark" href="/"><i>P</i>CampusPark</a>
+  <nav><a href="/bookings" class="on">My bookings</a><a href="/admin">Staff</a></nav>
+</header>
+<main class="narrow">
+  <h1>My bookings.</h1>
+  <p class="lede">Open a booking with its confirmation number and the driver ID it was made with.</p>
+  <form class="card" id="find">
+    <label class="field"><span>Confirmation number</span><input id="code" placeholder="RES-00001" required autocomplete="off"></label>
+    <label class="field"><span>Driver ID</span><input id="driver" required autocomplete="off"></label>
+    <button class="btn full" type="submit">Open booking</button>
+  </form>
+  <h2 class="section-title" id="recent-title" hidden>On this device</h2>
+  <ul class="recent" id="recent"></ul>
+</main>
+<script type="module">
+import { esc, session, recent } from "/static/common.js";
+const $ = id => document.getElementById(id);
+$("driver").value = session.driver;
+$("find").addEventListener("submit", e => {
+  e.preventDefault();
+  session.driver = $("driver").value.trim();
+  location.href = `/booking/${encodeURIComponent($("code").value.trim().toUpperCase())}`;
+});
+const list = recent.all();
+if (list.length) {
+  $("recent-title").hidden = false;
+  $("recent").innerHTML = list.map(b => `<li><a href="/booking/${encodeURIComponent(b.id)}">
+    <span><b>${esc(b.lot)}</b><br><small>${esc(b.start)} to ${esc(b.end)}</small></span><small>${esc(b.id)}</small></a></li>`).join("");
+}
+</script>
+</body>
+</html>

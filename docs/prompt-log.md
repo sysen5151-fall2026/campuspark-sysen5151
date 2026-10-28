@@ -538,3 +538,25 @@ on the map from a glass panel), a new `style.css` and `index.html`, a light staf
 **Checked:** all suites unchanged (skeleton 43 passed; 20 Chapter 3 placeholders still fail). The
 scroll story, a search, pointing at a lot, holding a place and a staff closure were run by hand at
 desktop width; the hero was checked at phone width.
+
+---
+
+### 2026-10-28 · Hangting Zhu · Claude (Opus 5.5) · Fourth redesign: a multi-page booking flow
+
+**Asked for:** stop putting everything on one scrolling page; embed the search in the home page;
+give booking a real sense of confirmation; follow how well-made booking products structure the flow.
+The procedural 3D world was judged too crude and is removed.
+
+**Produced:** separate pages served by new routes in `api/main.py`: home with the embedded search,
+`/find` (results list, MapLibre map with OpenFreeMap tiles, lot details sliding over the list),
+`/review` (summary before anything is held), `/booking/{id}` (success check and a Wallet-style pass
+with QR code, directions and a calendar file) and `/bookings`. Shared `common.js` keeps the driver ID
+in session storage rather than URLs, and lists bookings made on the device. New `style.css` and
+`web/DESIGN.md`; image slots with fallbacks for photographs Hangting is generating separately
+(`web/static/media/README.md`). Staff console restyled to match. No change to any function.
+
+**Tests changed:** `tests/test_skeleton.py` gains a check that every page is served with
+`Cache-Control: no-cache`.
+
+**Checked:** every suite as before, skeleton now 48 passed. Searched, opened a lot, reviewed,
+confirmed and opened the booking again by hand; staff page and phone width checked.

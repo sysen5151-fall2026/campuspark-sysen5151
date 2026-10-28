@@ -5,95 +5,82 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CampusPark</title>
 <link rel="stylesheet" href="/static/style.css">
-<script type="importmap">
-{"imports": {
-  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
-}}
-</script>
 </head>
-<body>
+<body class="home">
 
-<div id="world" aria-hidden="true"></div>
-<div class="veil" aria-hidden="true"></div>
-
-<header class="nav">
-  <a class="brand" href="/">CampusPark</a>
-  <nav>
-    <a href="#book">Book</a>
-    <a href="#book" data-lookup>Find my booking</a>
-    <a href="/admin">Staff</a>
-  </nav>
+<header class="bar">
+  <a class="mark" href="/"><i>P</i>CampusPark</a>
+  <nav><a href="/bookings">My bookings</a><a href="/admin">Staff</a></nav>
 </header>
 
-<main>
-  <section class="hero">
-    <p class="kicker">Cornell campus parking</p>
-    <h1>Your place<br>is waiting.</h1>
-    <p class="sub">CampusPark checks your permit, finds a lot with room for your whole stay, and holds the place before you leave.</p>
-    <div class="ctas">
-      <a class="pill" href="#book">Find parking</a>
-      <a class="link" href="#story">See how it works</a>
+<section class="hero">
+  <div class="hero-media" aria-hidden="true">
+    <video id="hero-video" muted autoplay loop playsinline preload="none" poster="/static/media/hero.jpg" hidden></video>
+    <img id="hero-img" src="/static/media/hero.jpg" alt="" onerror="this.remove()">
+  </div>
+  <h1>Your place<br>is waiting.</h1>
+  <p class="lede">Lots your permit allows, with room for your whole stay. Held before you leave.</p>
+
+  <form class="search" id="search" role="search" aria-label="Find parking">
+    <div class="seg" data-focus="driver">
+      <label for="driver">Driver ID</label>
+      <input id="driver" placeholder="student01" autocomplete="off" required>
     </div>
-    <div class="scroll-cue" aria-hidden="true"><span></span></div>
-  </section>
-
-  <section class="beat" id="story">
-    <div class="beat-text">
-      <h2>Your permit,<br>read in a second.</h2>
-      <p>We ask the campus permit system once, then show only the lots that accept your permit. Nothing you
-        can't use, nothing you have to check twice.</p>
+    <div class="seg" data-focus="destination">
+      <label for="destination">Going to</label>
+      <select id="destination"></select>
     </div>
-  </section>
-
-  <section class="beat right">
-    <div class="beat-text">
-      <h2>Every place counted<br>for your whole stay.</h2>
-      <p>A lot is offered only when a place stays free from the minute you arrive to the minute you leave.
-        <span class="count"><b id="count">0</b> places checked</span></p>
+    <div class="seg" data-focus="arrival">
+      <label for="arrival">Arriving</label>
+      <input id="arrival" type="time" value="09:00" required>
     </div>
-  </section>
-
-  <section class="beat">
-    <div class="beat-text">
-      <h2>Held before you<br>start the engine.</h2>
-      <p>One tap holds the place in our records. Two drivers can't take the same one, and you get the address
-        and the walk before you go.</p>
+    <div class="seg">
+      <label>Staying</label>
+      <div class="stepper" id="hours-step">
+        <button type="button" data-dec aria-label="Fewer hours">−</button>
+        <output aria-live="polite"></output>
+        <input id="hours" type="hidden" value="2">
+        <button type="button" data-inc aria-label="More hours">+</button>
+      </div>
     </div>
-  </section>
+    <button class="btn go" type="submit" aria-label="Find parking">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    </button>
+  </form>
+  <p class="home-hint">Demo driver IDs: student01, staff01, visitor01</p>
+</section>
 
-  <section class="book" id="book">
-    <div class="panel glass">
-      <h2>Where are you headed?</h2>
-      <form id="trip" class="fields">
-        <label><span>Driver ID</span><input id="driver" value="student01" autocomplete="off" required></label>
-        <label><span>Going to</span><select id="destination"></select></label>
-        <div class="row">
-          <label><span>Arriving</span><input id="arrival" type="time" value="09:00" required></label>
-          <label><span>Hours</span><input id="hours" type="number" value="2" min="1" max="15" required></label>
-        </div>
-        <p class="hint">Demo IDs: student01, staff01, visitor01</p>
-        <button class="pill wide" type="submit">Find parking</button>
-      </form>
-      <div id="out" aria-live="polite"></div>
-      <details class="lookup" id="lookup">
-        <summary>Find my booking</summary>
-        <form id="lookup-form" class="fields">
-          <label><span>Confirmation</span><input id="lookup-id" placeholder="RES-00001" required></label>
-          <label><span>Driver ID</span><input id="lookup-driver" required></label>
-          <button class="pill wide quiet" type="submit">Show</button>
-        </form>
-        <div id="lookup-out" aria-live="polite"></div>
-      </details>
-    </div>
-  </section>
-</main>
+<section class="how" id="how">
+  <h2>Three things, done before you drive.</h2>
+  <p class="sub">CampusPark does the checking a parking office would, in the second between your search and your booking.</p>
+  <div class="tiles">
+    <article class="tile"><div class="ph permit"></div><div class="cap"><b>Your permit, read in a second.</b><span>Only lots that accept it are offered.</span></div></article>
+    <article class="tile"><div class="ph count"></div><div class="cap"><b>Every place counted.</b><span>A lot is offered only if a place stays free for your whole stay.</span></div></article>
+    <article class="tile"><div class="ph held"></div><div class="cap"><b>Held, not hoped for.</b><span>One booking per request. No one can take the same place.</span></div></article>
+  </div>
+</section>
 
-<footer class="foot">A pilot on fixture permit and map data. Lot positions are approximate. Places are held in
-  CampusPark's booking records; nothing senses an empty space.</footer>
+<footer class="home-foot">A pilot on fixture permit and map data. Places are held in CampusPark's booking records; nothing senses an empty space.</footer>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
-<script type="module" src="/static/main.js"></script>
+<script type="module">
+import { destinations, session, stepper, esc } from "/static/common.js";
+const $ = id => document.getElementById(id);
+$("destination").innerHTML = (await destinations()).map(d => `<option>${esc(d)}</option>`).join("");
+$("driver").value = session.driver;
+stepper($("hours-step"), 1, 15);
+document.querySelectorAll(".seg[data-focus]").forEach(s => s.addEventListener("click", () => $(s.dataset.focus).focus()));
+// a looping film is used when one has been added to static/media
+fetch("/static/media/loop.mp4", {method: "HEAD"}).then(r => {
+  if (r.ok && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    const v = $("hero-video"); v.src = "/static/media/loop.mp4"; v.hidden = false; $("hero-img")?.remove();
+  }
+}).catch(() => {});
+$("search").addEventListener("submit", e => {
+  e.preventDefault();
+  session.driver = $("driver").value.trim();
+  const q = new URLSearchParams({to: $("destination").value, at: $("arrival").value, hours: $("hours").value});
+  location.href = `/find?${q}`;
+});
+</script>
 </body>
 </html>

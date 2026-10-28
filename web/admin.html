@@ -6,11 +6,11 @@
 <title>CampusPark Staff</title>
 <link rel="stylesheet" href="/static/style.css">
 </head>
-<body class="staff">
+<body>
 
-<header class="nav">
-  <a class="brand" href="/">CampusPark</a>
-  <nav><a href="/">Driver view</a></nav>
+<header class="bar">
+  <a class="mark" href="/"><i>P</i>CampusPark</a>
+  <nav><a href="/">Driver view</a><a href="/admin" class="on">Staff</a></nav>
 </header>
 
 <main class="staff-wrap">
@@ -28,16 +28,16 @@
 
     <section class="card">
       <h2>Change a pool</h2>
-      <form id="change" class="fields">
-        <label><span>Staff account (demo: admin01)</span><input id="account" value="admin01" autocomplete="off" required></label>
-        <label><span>Pool</span><select id="pool"></select></label>
-        <label><span>New number of places</span><input id="capacity" type="number" min="0" placeholder="Keep as is"></label>
-        <div class="row" style="grid-template-columns: 1fr 1fr">
-          <label><span>Closed from</span><input id="close-start" type="time"></label>
-          <label><span>Until</span><input id="close-end" type="time"></label>
+      <form id="change">
+        <label class="field"><span>Staff account (demo: admin01)</span><input id="account" value="admin01" autocomplete="off" required></label>
+        <label class="field"><span>Pool</span><select id="pool"></select></label>
+        <label class="field"><span>New number of places</span><input id="capacity" type="number" min="0" placeholder="Keep as is"></label>
+        <div class="two">
+          <label class="field"><span>Closed from</span><input id="close-start" type="time"></label>
+          <label class="field"><span>Until</span><input id="close-end" type="time"></label>
         </div>
-        <label class="check"><input id="clear" type="checkbox"> Reopen it first (remove today's closures)</label>
-        <button class="pill wide" type="submit">Apply the change</button>
+        <label class="tick"><input id="clear" type="checkbox"> Reopen it first (remove today's closures)</label>
+        <button class="btn full" type="submit">Apply the change</button>
       </form>
       <div class="outcome" id="result" aria-live="polite"></div>
     </section>

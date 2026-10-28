@@ -47,6 +47,13 @@ def test_home_page_loads():
     assert "CampusPark" in r.text
 
 
+@pytest.mark.parametrize("path", ["/find", "/review", "/booking/RES-00001", "/bookings", "/admin"])
+def test_every_page_is_served(path):
+    r = client.get(path)
+    assert r.status_code == 200 and "CampusPark" in r.text
+    assert r.headers["cache-control"] == "no-cache"
+
+
 def test_student_gets_only_student_lots_nearest_first():
     r = client.post("/api/options", json=trip())
     assert r.status_code == 200

@@ -1,47 +1,53 @@
 # CampusPark visual design
 
 **Subject.** A campus driver, about to leave for Cornell, wants to know which lots their permit allows
-and to hold a place before driving. The page is built like a product launch page: one live 3D world
-behind everything, a short scroll story told by the camera, then booking on the same world seen from
-above. Quiet type, a lot of dark space, one warm accent.
+and to hold a place before driving. The product follows the shape of the booking apps drivers already
+know (search, results on a map, details, review, confirmation) and the look of Apple's own pages: a
+cinematic home page, then quiet light pages where the work happens.
+
+## Pages and flow
+
+| Page | Job | Pattern it borrows |
+| --- | --- | --- |
+| `/` home | one sentence and the trip search, embedded in the hero | Airbnb and Google Flights search bar over a full-bleed image |
+| `/find` | results list on the left, map on the right, lot details sliding over the list | SpotHero and Airbnb split view |
+| `/review` | the booking summarized before anything is held | checkout review step |
+| `/booking/{id}` | a success moment, then a pass with QR code, directions and calendar | Apple Wallet pass |
+| `/bookings` | open a booking again; bookings made on this device are listed | order lookup |
+| `/admin` | staff controls | settings page |
+
+Each page does one thing. Nothing is held until the driver presses "Confirm and hold this place" on
+the review page, and the confirmation is a page of its own.
 
 ## Tokens
 
 | Name | Value | Role |
 | --- | --- | --- |
-| Night | `#06080c` | scene and page ground |
-| Ink | `#f5f5f7` | type on the dark page |
-| Soft / dim | `#a1a1a6` / `#6e6e73` | secondary type |
-| Sodium amber | `#ffb547` | the place you can take or have taken: the empty stall, beams over allowed lots, the walk, the ticket |
-| System blue | `#0a84ff` (`#0071e3` on light) | actions and links only |
-| Glass | `rgba(18,20,26,.58)` with 28px blur | the booking panel over the map |
-| Paper / text | `#f5f5f7` / `#1d1d1f` | the staff console, which is a light working page |
+| Ink | `#1d1d1f`, `#424245`, `#6e6e73`, `#86868b` | type, in four steps |
+| Paper / white | `#f5f5f7` / `#ffffff` | app page ground and surfaces |
+| Lines | `#d2d2d7`, `#e8e8ed` | borders and dividers |
+| Blue | `#0071e3` | every action and link |
+| Sodium amber | `#ffb547` | the brand mark, the permit tag, the pass header |
+| Green | `#1d8a3a` | places free and the success check |
+| Night | `#05070b` | the home page |
 
-Type: the system San Francisco stack (`-apple-system`, SF Pro Display/Text). Hero 112px at 700 with
-tight tracking and a white-to-steel gradient; section heads 64px; body 17px; numerals tabular.
+Type: the system San Francisco stack. Home headline 104px at 700 with tight tracking; page titles
+40px; body 17px.
 
-## The world (`web/static/scene.js`, Three.js 0.160 from jsDelivr)
+## Imagery
 
-Everything is generated in code: no image, model or video files.
+Photographic images generated for the project (see `web/static/media/README.md`), never stock
+footage of real people or plates: a hero, three "how it works" tiles and one thumbnail per lot. Every
+image slot has a gradient fallback, so the pages work before the images arrive.
 
-- A lot at dusk: rounded-box cars in muted paint, head and tail lights, sodium lamps with real point
-  lights, trees, wet asphalt, a blue-hour sky dome, lit-window buildings on the skyline, bloom.
-- The empty stall glows amber with a floating P: that is the driver's place.
-- From above, the same world becomes the campus map: every fixture lot is placed from `/api/map`
-  (approximate positions), allowed lots raise an amber beam whose height is the share of places free,
-  destinations are pale beams, and the walk is an arched light trail with moving dashes.
+## Map
+
+MapLibre GL with OpenFreeMap's Positron style (no key). Lots the permit allows are white pills showing
+the walk in minutes; the open lot turns black; lots outside the permit are small grey dots; the
+destination is a blue dot. The walk is a dashed blue line. Positions are approximate and the map says so.
 
 ## Motion
 
-One choreography, driven by scroll (GSAP 3.12 ScrollTrigger): hero, then three beats (permit, places
-counted, held) with one camera move each, then the rise to the campus for booking. After that, motion
-only answers the driver: pointing at a lot draws its trail and frames it; holding draws it solid.
-Everything is static under `prefers-reduced-motion`.
-
-## Rules
-
-- Amber means "a place for you". Blue means "you can press this". Nothing else is colored.
-- Words sit on dark space, never on top of busy geometry; the camera frames the scene to leave room.
-- No decorative cards: the only panel is the glass booking panel and the only filled block is the
-  ticket for a held place.
-- Lot positions are approximate and the footer says so.
+Small and purposeful: the hero text rises in once, the hero image settles from a slight zoom, the
+details panel slides over the list, the map eases to the chosen lot, and the success check draws
+itself before the pass appears. All of it is off under `prefers-reduced-motion`.
