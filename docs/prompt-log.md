@@ -580,3 +580,9 @@ generator's notes are kept in `web/static/media/generation-prompts.json`. They w
 facilities, so the pages label them "illustrative" and the lot details offer the real USGS aerial view
 beside them. The map's loading cover now lifts when the style arrives, since the animated beams keep the
 map from ever reporting "idle".
+
+**Follow-up, same day: the lot card.** The lot details became a place card in the manner of Apple
+Maps: an edge-to-edge picture that swipes between the illustrative photo and the real aerial, a back
+button on the picture, three quick facts with icons, one square per place (held ones filled, from F.4's
+remaining count), the "why this lot" facts as a checklist, and a booking bar that sticks to the bottom
+without covering the content. Result cards gained "Closest walk" and "Most room" tags.

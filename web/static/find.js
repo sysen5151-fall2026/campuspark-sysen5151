@@ -45,6 +45,14 @@ function arch(a, b, n = 64) {
 
 const empty = {type: "FeatureCollection", features: []};
 
+const ICON = {
+  walk: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="13" cy="4" r="2"/><path d="M10 21l2-6 3 3v3M7 12l3-4 4 1 3 3M12 9l-1 5"/></svg>',
+  park: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><path d="M10 17V7h3a3 3 0 0 1 0 6h-3"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  check: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  back: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>',
+};
+
 /* ------------------------------------------------------------------ the map */
 function addWorld() {
   const night = theme === "night";
@@ -261,17 +269,23 @@ function renderList() {
       ${esc(found.reason || "")} Try an earlier or later arrival, or a shorter stay.</div>`;
     return;
   }
-  $("results").innerHTML = opts.map(o => `
+  const most = opts.reduce((a, o) => (o.remaining > a.remaining ? o : a), opts[0]);
+  $("results").innerHTML = opts.map((o, i) => {
+    const tags = [i === 0 && o.walk_minutes !== null ? "Closest walk" : "", o === most && opts.length > 1 ? "Most room" : ""].filter(Boolean);
+    return `
     <li class="res" data-lot="${esc(o.lot_id)}" tabindex="0">
       <div class="thumb" style="${lotPhotoStyle(o.lot_id, at(o.lot_id).lat, at(o.lot_id).lon, 336, 252)}"></div>
-      <div>
+      <div class="res-body">
+        ${tags.length ? `<div class="tags">${tags.map(t => `<span>${t}</span>`).join("")}</div>` : ""}
         <h3>${esc(o.name)}</h3>
         <div class="meta">${esc(o.address || "Address unavailable")}</div>
-        <div class="facts"><span><b>${o.walk_minutes === null ? "–" : o.walk_minutes}</b> min walk</span>
-          <span><b>${o.remaining}</b> of ${o.capacity} free</span></div>
-        <div class="${availClass(o)}"><i style="width:${Math.round(100 * o.remaining / o.capacity)}%"></i></div>
+        <div class="facts">
+          <span>${ICON.walk}<b>${o.walk_minutes === null ? "–" : o.walk_minutes}</b> min</span>
+          <span>${ICON.park}<b>${o.remaining}</b>/${o.capacity} free</span>
+        </div>
       </div>
-    </li>`).join("") + `<p class="credit">Lot photos are illustrative. Open a lot for its real aerial view.</p>`;
+    </li>`;
+  }).join("") + `<p class="credit">Lot photos are illustrative. Open a lot for its real aerial view.</p>`;
   document.querySelectorAll(".res").forEach(li => {
     li.addEventListener("mouseenter", () => hot(li.dataset.lot));
     li.addEventListener("focus", () => hot(li.dataset.lot));
@@ -292,40 +306,59 @@ function openDetail(lotId) {
     if (reduced) map.jumpTo(shot);
     else { map.flyTo({...shot, duration: 1600, curve: 1.3, essential: true}); map.once("moveend", () => { if (selected === lotId) orbit = true; }); }
   }
+  const free = Math.round(100 * o.remaining / o.capacity);
+  const walkTxt = o.walk_minutes === null ? "No estimate" : `${o.walk_minutes} min`;
   $("detail").innerHTML = `
-    <button class="back" id="back" type="button">‹ All lots</button>
-    <div class="cover-wrap">
-      <div class="cover" id="cover" style="${lotPhotoStyle(lotId, l?.lat, l?.lon, 880, 440)}"></div>
-      <div class="seg-toggle" role="tablist" aria-label="Lot picture">
-        <button type="button" role="tab" aria-selected="true" data-view="photo">Photo</button>
-        <button type="button" role="tab" aria-selected="false" data-view="aerial">Aerial</button>
+    <div class="media" id="media">
+      <div class="slides" id="slides">
+        <div class="slide" style="${lotPhotoStyle(lotId, l?.lat, l?.lon, 960, 560)}"></div>
+        <div class="slide" style="${lotImageStyle(l?.lat, l?.lon, 960, 560)}"></div>
       </div>
+      <button class="fab" id="back" type="button" aria-label="Back to all lots">${ICON.back}</button>
+      <div class="media-tabs" role="tablist" aria-label="Lot picture">
+        <button type="button" role="tab" aria-selected="true" data-slide="0">Photo</button>
+        <button type="button" role="tab" aria-selected="false" data-slide="1">Aerial</button>
+      </div>
+      <p class="media-credit" id="media-credit">Illustrative photo, not the actual lot</p>
     </div>
     <div class="body">
       <h2>${esc(o.name)}</h2>
       <p class="addr">${esc(o.address || "Address unavailable")}</p>
-      <div class="stats">
-        <div><b>${o.walk_minutes === null ? "–" : o.walk_minutes} min</b><span>walk to ${esc(trip.destination)}</span></div>
-        <div><b>${o.remaining}</b><span>of ${o.capacity} places free all stay</span></div>
-        <div><b>${esc(found.start)}</b><span>to ${esc(found.end)} today</span></div>
+      <div class="quick">
+        <div>${ICON.walk}<b>${walkTxt}</b><span>to ${esc(trip.destination)}</span></div>
+        <div>${ICON.park}<b>${o.remaining} free</b><span>of ${o.capacity}, whole stay</span></div>
+        <div>${ICON.clock}<b>${esc(found.start)}–${esc(found.end)}</b><span>today</span></div>
       </div>
-      <div class="${availClass(o)}"><i style="width:${Math.round(100 * o.remaining / o.capacity)}%"></i></div>
-      <div class="why"><h4>Why this lot was offered</h4><ul>${o.facts.map(f => `<li>${esc(f)}</li>`).join("")}</ul></div>
-      <p class="credit" id="cover-credit">Illustrative photo, not the actual lot. Lot names are pilot fixtures.</p>
+
+      <section class="block">
+        <h4>Places for your stay <small>${free}% free</small></h4>
+        <div class="cells" role="img" aria-label="${o.remaining} of ${o.capacity} places free for your whole stay">
+          ${Array.from({length: o.capacity}, (_, i) => `<i class="${i >= o.remaining ? "taken" : ""}"></i>`).join("")}
+        </div>
+        <p class="hint">Each square is one place. Filled ones are already held at some point in your stay.</p>
+      </section>
+
+      <section class="block">
+        <h4>Why this lot was offered</h4>
+        <ul class="checks">${o.facts.map(f => `<li>${ICON.check}<span>${esc(f)}</span></li>`).join("")}</ul>
+      </section>
+      <p class="credit">Lot names are pilot fixtures. Aerial view: USGS The National Map (public domain).</p>
     </div>
-    <div class="cta-dock">
-      <button class="btn big" id="reserve" type="button">Reserve a place here</button>
-      <small>You'll review it before anything is booked.</small>
+    <div class="dock">
+      <div class="dock-sum"><b>${esc(found.start)}–${esc(found.end)} today</b><span>${esc(o.name)} · ${walkTxt} walk</span></div>
+      <button class="btn" id="reserve" type="button">Reserve</button>
     </div>`;
   $("detail").classList.add("open");
   $("back").addEventListener("click", closeDetail);
-  document.querySelectorAll(".seg-toggle button").forEach(b => b.addEventListener("click", () => {
-    const aerial = b.dataset.view === "aerial";
-    document.querySelectorAll(".seg-toggle button").forEach(x => x.setAttribute("aria-selected", String(x === b)));
-    $("cover").setAttribute("style", aerial ? lotImageStyle(l?.lat, l?.lon, 880, 440) : lotPhotoStyle(lotId, l?.lat, l?.lon, 880, 440));
-    $("cover-credit").textContent = aerial ? "Real aerial view: USGS The National Map (public domain). Lot names are pilot fixtures."
-                                           : "Illustrative photo, not the actual lot. Lot names are pilot fixtures.";
-  }));
+  const showSlide = n => {
+    $("slides").style.transform = `translateX(${-50 * n}%)`;
+    document.querySelectorAll(".media-tabs button").forEach(b => b.setAttribute("aria-selected", String(+b.dataset.slide === n)));
+    $("media-credit").textContent = n ? "Real aerial view of this spot" : "Illustrative photo, not the actual lot";
+  };
+  document.querySelectorAll(".media-tabs button").forEach(b => b.addEventListener("click", () => showSlide(+b.dataset.slide)));
+  let x0 = null;
+  $("media").addEventListener("pointerdown", e => { x0 = e.clientX; });
+  $("media").addEventListener("pointerup", e => { if (x0 !== null && Math.abs(e.clientX - x0) > 40) showSlide(e.clientX < x0 ? 1 : 0); x0 = null; });
   $("reserve").addEventListener("click", () => {
     session.pending = {trip, lot: {...o, lat: l?.lat, lon: l?.lon}, start: found.start, end: found.end, permit: found.permit,
                        search_id: found.search_id, request_id: crypto.randomUUID()};
