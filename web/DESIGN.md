@@ -1,5 +1,11 @@
 # CampusPark visual design
 
+**Look: Liquid Glass.** Every page sits on a night scene (the generated photographs, blurred, with two slow
+amber and blue light fields and a fine grain), and every surface is frosted glass: a translucent fill, a
+28px backdrop blur, a lit top edge and a soft drop shadow. Primary actions are white glowing pills;
+secondary ones are glass. On the results page the map is the page and the list, search and lot card float
+over it, as in Apple Maps.
+
 **Subject.** A campus driver, about to leave for Cornell, wants to know which lots their permit allows
 and to hold a place before driving. The product follows the shape of the booking apps drivers already
 know (search, results on a map, details, review, confirmation) and the look of Apple's own pages: a
@@ -23,12 +29,12 @@ the review page, and the confirmation is a page of its own.
 
 | Name | Value | Role |
 | --- | --- | --- |
-| Ink | `#1d1d1f`, `#424245`, `#6e6e73`, `#86868b` | type, in four steps |
-| Paper / white | `#f5f5f7` / `#ffffff` | app page ground and surfaces |
-| Lines | `#d2d2d7`, `#e8e8ed` | borders and dividers |
-| Blue | `#0071e3` | every action and link |
+| Ink | `#f5f5f7` at 100, 82, 62 and 44% | type, in four steps |
+| Glass | fill `rgba(28,31,40,.42)`, edge `rgba(255,255,255,.16)`, blur 28px | every surface |
+| White pill | `#ffffff` to `#e9eaee` with a soft white glow | primary actions |
+| Blue | `#2997ff` | links and the destination |
 | Sodium amber | `#ffb547` | the brand mark, the permit tag, the pass header |
-| Green | `#1d8a3a` | places free and the success check |
+| Green | `#34c759` | places free and the success check |
 | Night | `#05070b` | the home page |
 
 Type: the system San Francisco stack. Home headline 104px at 700 with tight tracking; page titles

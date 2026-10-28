@@ -586,3 +586,11 @@ Maps: an edge-to-edge picture that swipes between the illustrative photo and the
 button on the picture, three quick facts with icons, one square per place (held ones filled, from F.4's
 remaining count), the "why this lot" facts as a checklist, and a booking bar that sticks to the bottom
 without covering the content. Result cards gained "Closest walk" and "Most room" tags.
+
+**Follow-up, same day: Liquid Glass across every page.** A new `style.css` puts every page on a night
+scene (blurred generated photographs, two slow light fields, fine grain) and every surface in frosted
+glass with a lit edge. The results page makes the map full-screen with the top bar, search and list
+floating over it, and the map's padding accounts for the floating panel. Primary buttons are white
+glowing pills; the pass has a moving sheen. While testing, a booking failed because the local database
+file had been deleted under the running server; the server was restarted, and test data is now cleared
+only with the server stopped.

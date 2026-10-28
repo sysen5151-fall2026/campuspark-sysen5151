@@ -176,7 +176,8 @@ function fit(ids, intro) {
   if (!pts.length || !map) return;
   const b = new maplibregl.LngLatBounds();
   pts.forEach(p => b.extend([p.lon, p.lat]));
-  const cam = map.cameraForBounds(b, {padding: {top: 110, bottom: 110, left: 110, right: 110}, maxZoom: 16.2});
+  const wide = window.innerWidth > 900;
+  const cam = map.cameraForBounds(b, {padding: {top: wide ? 170 : 90, bottom: 90, left: wide ? 520 : 60, right: 90}, maxZoom: 16.2});
   if (!cam) return;
   const shot = {...cam, pitch: 58, bearing: -22};
   if (reduced) map.jumpTo(shot);
@@ -302,7 +303,8 @@ function openDetail(lotId) {
   const l = geo.lots[lotId];
   if (l && map) {
     orbit = false;
-    const shot = {center: [l.lon, l.lat], zoom: 16.3, pitch: 60, bearing: map.getBearing() + 35};
+    const shot = {center: [l.lon, l.lat], zoom: 16.3, pitch: 60, bearing: map.getBearing() + 35,
+                  padding: {left: window.innerWidth > 900 ? 480 : 0, top: 60, right: 0, bottom: 0}};
     if (reduced) map.jumpTo(shot);
     else { map.flyTo({...shot, duration: 1600, curve: 1.3, essential: true}); map.once("moveend", () => { if (selected === lotId) orbit = true; }); }
   }
@@ -349,6 +351,7 @@ function openDetail(lotId) {
       <button class="btn" id="reserve" type="button">Reserve</button>
     </div>`;
   $("detail").classList.add("open");
+  document.querySelector(".side").classList.add("has-detail");
   $("back").addEventListener("click", closeDetail);
   const showSlide = n => {
     $("slides").style.transform = `translateX(${-50 * n}%)`;
@@ -369,6 +372,7 @@ function openDetail(lotId) {
 
 function closeDetail() {
   $("detail").classList.remove("open");
+  document.querySelector(".side").classList.remove("has-detail");
   orbit = false;
   select(null);
   fit(found.options.map(o => o.lot_id));
