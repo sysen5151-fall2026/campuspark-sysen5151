@@ -43,16 +43,46 @@ export function lotAerial(lat, lon, w = 600, h = 400) {
     `bbox=${bbox}&bboxSR=4326&imageSR=3857&size=${w},${h}&format=jpg&f=image`;
 }
 
-// The lot's photo: an illustrative image generated for the pilot, with the real aerial underneath
-// as a fallback if the photo is missing.
+// Real photographs of comparable campus lots and garages from Wikimedia Commons, free licences, credited
+// where shown. No freely licensed photo of the fixture lots themselves exists, so each one stands in for
+// its lot and is labelled that way; the aerial tab shows the actual spot.
+const COMMONS = "https://upload.wikimedia.org/wikipedia/commons/thumb/";
+export const LOT_PHOTOS = {
+  "A-lot": {path: "b/bf/Summit_View_Parking_Lot_-_University_of_Wyoming_Campus_%2852511610724%29.jpg",
+            place: "Summit View lot, University of Wyoming", by: "Tony Webster", license: "CC BY 2.0",
+            page: "https://commons.wikimedia.org/wiki/File:Summit_View_Parking_Lot_-_University_of_Wyoming_Campus_(52511610724).jpg"},
+  "hoy-garage": {path: "a/a9/Thompson_Parking_Structure_at_Night%2C_University_of_Michigan_Campus%2C_Ann_Arbor%2C_Michigan_-_panoramio.jpg",
+                 place: "Thompson Street structure, University of Michigan", by: "Dwight Burdette", license: "CC BY 3.0",
+                 page: "https://commons.wikimedia.org/wiki/File:Thompson_Parking_Structure_at_Night,_University_of_Michigan_Campus,_Ann_Arbor,_Michigan_-_panoramio.jpg"},
+  "forest-home": {path: "b/b6/Parking_lot_at_Lake_Meridian_Park_%282025%29_-_0001.jpg",
+                  place: "Lake Meridian Park lot, Kent, WA", by: "Roc0ast3r", license: "CC0",
+                  page: "https://commons.wikimedia.org/wiki/File:Parking_lot_at_Lake_Meridian_Park_(2025)_-_0001.jpg"},
+  "visitor-garage": {path: "0/05/VSU_Oak_St_Parking_Deck_5.jpg",
+                     place: "Oak Street deck, Valdosta State University", by: "Michael Rivera", license: "CC BY-SA 3.0",
+                     page: "https://commons.wikimedia.org/wiki/File:VSU_Oak_St_Parking_Deck_5.jpg"},
+};
+
+export function lotPhotoUrl(poolId, w) {
+  const p = LOT_PHOTOS[poolId];
+  if (!p) return "";
+  const size = w > 960 ? 1920 : 960;   // Commons serves these standard widths
+  return `${COMMONS}${p.path}/${size}px-${p.path.split("/").pop()}`;
+}
+
+export function lotPhotoCredit(poolId) {
+  const p = LOT_PHOTOS[poolId];
+  return p ? `Similar lot: <a href="${p.page}" target="_blank" rel="noopener">${esc(p.place)}</a> · ${esc(p.by)}, ${esc(p.license)}` : "";
+}
+
+// The lot's photo, with the real aerial underneath if the photo cannot load.
 export function lotPhotoStyle(poolId, lat, lon, w, h) {
-  const aerial = lotAerial(lat, lon, w, h);
-  return `background-image:url('/static/media/lot-${poolId}.jpg'), ${aerial ? `url('${aerial}'), ` : ""}linear-gradient(135deg,#dfe3ea,#c8ced8)`;
+  const aerial = lotAerial(lat, lon, w, h), photo = lotPhotoUrl(poolId, w);
+  return `background-image:${photo ? `url('${photo}'), ` : ""}${aerial ? `url('${aerial}'), ` : ""}linear-gradient(135deg,#2a2f3a,#161a22)`;
 }
 
 export function lotImageStyle(lat, lon, w, h) {
   const aerial = lotAerial(lat, lon, w, h);
-  return `background-image:${aerial ? `url('${aerial}'), ` : ""}linear-gradient(135deg,#dfe3ea,#c8ced8)`;
+  return `background-image:${aerial ? `url('${aerial}'), ` : ""}linear-gradient(135deg,#2a2f3a,#161a22)`;
 }
 
 export async function destinations() {

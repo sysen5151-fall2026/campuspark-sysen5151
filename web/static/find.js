@@ -1,6 +1,6 @@
 // Search results: the list on the left, a live campus map on the right, lot details opening in place.
 // The map is a real map (OpenFreeMap tiles) with Cornell's real buildings raised from OpenStreetMap.
-import { api, esc, session, destinations, lotImageStyle, lotPhotoStyle } from "/static/common.js";
+import { api, esc, session, destinations, lotImageStyle, lotPhotoStyle, lotPhotoCredit } from "/static/common.js";
 
 const $ = id => document.getElementById(id);
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -16,7 +16,7 @@ const STYLES = {night: "https://tiles.openfreemap.org/styles/dark", day: "https:
 let theme = "night";
 let geo = {lots: {}, dests: {}};
 let found = null, map = null, markers = {}, destMarker = null;
-let selected = null, hovered = null, orbit = false;
+let selected = null, hovered = null, orbit = false, orbitRate = 2, spinBtn = null;   // orbit in degrees a second
 const beams = {};      // lot id -> {now, target} heights in metres
 let walk = null;       // {coords, t0} for the arched trail being shown
 
@@ -51,6 +51,11 @@ const ICON = {
   clock: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
   check: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
   back: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>',
+  ccw: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5v5h5"/><path d="M5.6 15.5A8 8 0 1 0 6 8.3L4 10"/></svg>',
+  cw: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 5v5h-5"/><path d="M18.4 15.5A8 8 0 1 1 18 8.3l2 1.7"/></svg>',
+  sun: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4L6 18M18 6l1.4-1.4"/></svg>',
+  moon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>',
+  spin: '<svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="12" rx="9" ry="4"/><path d="M12 3v18"/><path d="M17.5 6.6l1.6-1.4-.4 2.1"/></svg>',
 };
 
 /* ------------------------------------------------------------------ the map */
@@ -94,9 +99,13 @@ function initMap() {
     container: "map", style: STYLES[theme],
     center: [-76.476, 42.452], zoom: 13.2, pitch: 0, bearing: 0, attributionControl: {compact: true},
   });
-  map.addControl(new maplibregl.NavigationControl({visualizePitch: true}), "top-right");
+  map.addControl(new maplibregl.NavigationControl({showCompass: false}), "top-right");
   map.addControl(new MapSwitches(), "top-right");
-  ["dragstart", "zoomstart", "rotatestart", "pitchstart", "wheel"].forEach(ev => map.on(ev, e => { if (e.originalEvent) orbit = false; }));
+  document.querySelector(".mapwrap").appendChild(rotateDial(map));
+  ["dragstart", "zoomstart", "rotatestart", "pitchstart", "wheel"].forEach(ev => map.on(ev, e => { if (e.originalEvent) setOrbit(false); }));
+  // the camera treats the map beside the floating panels as the view, so fly-ins and rotation centre there
+  map.setPadding(viewPadding());
+  map.on("resize", () => map.setPadding(viewPadding()));
   map.on("style.load", addWorld);
   map.once("style.load", () => $("map-loading")?.remove());   // tiles then fade in; "idle" never fires while beams animate
   return new Promise(res => map.once("load", res));
@@ -160,13 +169,87 @@ function walkFrame(t) {
   }
 }
 
+let lastFrame = 0;
 function loop(t) {
   if (map) {
     beamFrame(t);
     walkFrame(t);
-    if (orbit && !reduced && !map.isMoving()) map.setBearing(map.getBearing() + 0.035);
+    const dt = Math.min(64, t - (lastFrame || t));
+    if (orbit && !reduced && !map.isMoving()) map.setBearing(map.getBearing() + orbitRate * dt / 1000);
   }
+  lastFrame = t;
   requestAnimationFrame(loop);
+}
+
+function setOrbit(on, rate = orbitRate) {
+  orbit = on && !reduced;
+  orbitRate = rate;
+  spinBtn?.setAttribute("aria-pressed", String(orbit));
+}
+
+// Rotation, bottom right: turn left, a compass that shows the heading and turns back to north, turn right,
+// and a slow spin. A tap turns 45 degrees; holding keeps the map turning until you let go.
+function rotateDial(m) {
+  const el = document.createElement("div");
+  el.className = "dial";
+  el.setAttribute("role", "group");
+  el.setAttribute("aria-label", "Rotate the map");
+  el.innerHTML = `
+    <button type="button" data-turn="1" title="Rotate left · hold to keep turning (Q)" aria-label="Rotate left">${ICON.ccw}</button>
+    <button type="button" class="compass" title="Face north (N)" aria-label="Face north"><span class="needle"><i></i><b>N</b></span></button>
+    <button type="button" data-turn="-1" title="Rotate right · hold to keep turning (E)" aria-label="Rotate right">${ICON.cw}</button>
+    <button type="button" class="spin" aria-pressed="false" title="Spin slowly around the view" aria-label="Spin the map">${ICON.spin}</button>`;
+  const needle = el.querySelector(".needle");
+  const heading = () => {
+    const b = m.getBearing();
+    needle.style.transform = `rotate(${-b}deg)`;
+    el.querySelector(".compass").classList.toggle("north", Math.abs(((b % 360) + 360) % 360) < 1);
+  };
+  m.on("rotate", heading);
+  heading();
+  el.querySelectorAll("[data-turn]").forEach(btn => {
+    const dir = +btn.dataset.turn;
+    let hold = null, raf = 0, t0 = 0, last = 0;
+    const keepTurning = now => { m.setBearing(m.getBearing() + dir * 60 * (now - last) / 1000); last = now; raf = requestAnimationFrame(keepTurning); };
+    btn.addEventListener("pointerdown", e => {
+      setOrbit(false);
+      t0 = performance.now();
+      btn.setPointerCapture(e.pointerId);
+      hold = setTimeout(() => { last = performance.now(); raf = requestAnimationFrame(keepTurning); }, 250);
+    });
+    const stop = tapped => {
+      clearTimeout(hold); cancelAnimationFrame(raf);
+      if (tapped && performance.now() - t0 < 250) turn(m, dir * 45);
+    };
+    btn.addEventListener("pointerup", () => stop(true));
+    btn.addEventListener("pointercancel", () => stop(false));
+    btn.addEventListener("click", e => { if (e.detail === 0) turn(m, dir * 45); });   // keyboard
+  });
+  el.querySelector(".compass").addEventListener("click", () => { setOrbit(false); m.easeTo({bearing: 0, duration: reduced ? 0 : 700}); });
+  spinBtn = el.querySelector(".spin");
+  spinBtn.addEventListener("click", () => {
+    if (orbit) return setOrbit(false);
+    if (m.getPitch() < 20) m.easeTo({pitch: 55, duration: reduced ? 0 : 800});
+    setOrbit(true, 9);
+  });
+  if (reduced) spinBtn.hidden = true;
+  return el;
+}
+
+function turn(m, deg) {
+  setOrbit(false);
+  m.easeTo({bearing: m.getBearing() + deg, duration: reduced ? 0 : 650, easing: k => 1 - Math.pow(1 - k, 3)});
+}
+
+addEventListener("keydown", e => {
+  if (!map || e.metaKey || e.ctrlKey || e.altKey || e.target.closest?.("input, select, textarea")) return;
+  const k = e.key.toLowerCase();
+  if (k === "q" || k === "e") turn(map, k === "q" ? 45 : -45);
+  if (k === "n") { setOrbit(false); map.easeTo({bearing: 0, duration: reduced ? 0 : 700}); }
+});
+
+function viewPadding() {
+  return window.innerWidth > 900 ? {left: 472, top: 140, right: 56, bottom: 16} : {left: 0, top: 0, right: 0, bottom: 0};
 }
 
 function fit(ids, intro) {
@@ -176,10 +259,10 @@ function fit(ids, intro) {
   if (!pts.length || !map) return;
   const b = new maplibregl.LngLatBounds();
   pts.forEach(p => b.extend([p.lon, p.lat]));
-  const wide = window.innerWidth > 900;
-  const cam = map.cameraForBounds(b, {padding: {top: wide ? 170 : 90, bottom: 90, left: wide ? 520 : 60, right: 90}, maxZoom: 16.2});
+  const bearing = intro ? -22 : map.getBearing();
+  const cam = map.cameraForBounds(b, {padding: {top: 50, bottom: 80, left: 60, right: 70}, maxZoom: 16.2, bearing});
   if (!cam) return;
-  const shot = {...cam, pitch: 58, bearing: -22};
+  const shot = {...cam, pitch: intro || map.getPitch() > 5 ? 58 : 0};
   if (reduced) map.jumpTo(shot);
   else map.flyTo({...shot, duration: intro ? 2600 : 1400, curve: 1.4, essential: true});
 }
@@ -236,13 +319,13 @@ class MapSwitches {
     const label = () => {
       dim.textContent = m.getPitch() > 5 ? "2D" : "3D";
       dim.title = `Switch to ${dim.textContent} view`;
-      mode.textContent = theme === "night" ? "☀︎" : "☾";
+      mode.innerHTML = theme === "night" ? ICON.sun : ICON.moon;
       mode.title = theme === "night" ? "Day map" : "Night map";
     };
     dim.addEventListener("click", () => {
       const flat = m.getPitch() > 5;
-      orbit = false;
-      m.easeTo({pitch: flat ? 0 : 58, bearing: flat ? 0 : -22, duration: 900});
+      setOrbit(false);
+      m.easeTo({pitch: flat ? 0 : 58, duration: 900});
     });
     mode.addEventListener("click", () => {
       theme = theme === "night" ? "day" : "night";
@@ -286,7 +369,7 @@ function renderList() {
         </div>
       </div>
     </li>`;
-  }).join("") + `<p class="credit">Lot photos are illustrative. Open a lot for its real aerial view.</p>`;
+  }).join("") + `<p class="credit">Photos are real photos of similar campus lots (Wikimedia Commons, credited on each lot). Open a lot for the aerial of the actual spot.</p>`;
   document.querySelectorAll(".res").forEach(li => {
     li.addEventListener("mouseenter", () => hot(li.dataset.lot));
     li.addEventListener("focus", () => hot(li.dataset.lot));
@@ -302,11 +385,10 @@ function openDetail(lotId) {
   select(lotId);
   const l = geo.lots[lotId];
   if (l && map) {
-    orbit = false;
-    const shot = {center: [l.lon, l.lat], zoom: 16.3, pitch: 60, bearing: map.getBearing() + 35,
-                  padding: {left: window.innerWidth > 900 ? 480 : 0, top: 60, right: 0, bottom: 0}};
+    setOrbit(false);
+    const shot = {center: [l.lon, l.lat], zoom: 16.3, pitch: 60, bearing: map.getBearing() + 35};
     if (reduced) map.jumpTo(shot);
-    else { map.flyTo({...shot, duration: 1600, curve: 1.3, essential: true}); map.once("moveend", () => { if (selected === lotId) orbit = true; }); }
+    else { map.flyTo({...shot, duration: 1600, curve: 1.3, essential: true}); map.once("moveend", () => { if (selected === lotId) setOrbit(true, 2); }); }
   }
   const free = Math.round(100 * o.remaining / o.capacity);
   const walkTxt = o.walk_minutes === null ? "No estimate" : `${o.walk_minutes} min`;
@@ -321,7 +403,7 @@ function openDetail(lotId) {
         <button type="button" role="tab" aria-selected="true" data-slide="0">Photo</button>
         <button type="button" role="tab" aria-selected="false" data-slide="1">Aerial</button>
       </div>
-      <p class="media-credit" id="media-credit">Illustrative photo, not the actual lot</p>
+      <p class="media-credit" id="media-credit">${lotPhotoCredit(lotId)}</p>
     </div>
     <div class="body">
       <h2>${esc(o.name)}</h2>
@@ -344,7 +426,7 @@ function openDetail(lotId) {
         <h4>Why this lot was offered</h4>
         <ul class="checks">${o.facts.map(f => `<li>${ICON.check}<span>${esc(f)}</span></li>`).join("")}</ul>
       </section>
-      <p class="credit">Lot names are pilot fixtures. Aerial view: USGS The National Map (public domain).</p>
+      <p class="credit">Lot names are pilot fixtures. The photo shows a similar lot elsewhere; the aerial (USGS The National Map, public domain) shows this one.</p>
     </div>
     <div class="dock">
       <div class="dock-sum"><b>${esc(found.start)}–${esc(found.end)} today</b><span>${esc(o.name)} · ${walkTxt} walk</span></div>
@@ -356,7 +438,7 @@ function openDetail(lotId) {
   const showSlide = n => {
     $("slides").style.transform = `translateX(${-50 * n}%)`;
     document.querySelectorAll(".media-tabs button").forEach(b => b.setAttribute("aria-selected", String(+b.dataset.slide === n)));
-    $("media-credit").textContent = n ? "Real aerial view of this spot" : "Illustrative photo, not the actual lot";
+    $("media-credit").innerHTML = n ? "This exact spot from above · USGS, public domain" : lotPhotoCredit(lotId);
   };
   document.querySelectorAll(".media-tabs button").forEach(b => b.addEventListener("click", () => showSlide(+b.dataset.slide)));
   let x0 = null;
@@ -373,7 +455,7 @@ function openDetail(lotId) {
 function closeDetail() {
   $("detail").classList.remove("open");
   document.querySelector(".side").classList.remove("has-detail");
-  orbit = false;
+  setOrbit(false);
   select(null);
   fit(found.options.map(o => o.lot_id));
 }
@@ -383,7 +465,7 @@ async function search(intro) {
   $("results").innerHTML = `<div class="skeleton"></div><div class="skeleton"></div>`;
   $("detail").classList.remove("open");
   selected = null;
-  orbit = false;
+  setOrbit(false);
   const res = await api("/api/options", trip);
   if (res.error) {
     found = null;
@@ -403,6 +485,9 @@ async function search(intro) {
   placeMarkers();
   if (map) { fit(res.options.map(o => o.lot_id), intro); if (res.options[0]) hot(res.options[0].lot_id); }
 }
+
+// a hairline under the list heading once the list scrolls beneath it
+$("results").addEventListener("scroll", e => document.querySelector(".side-head").classList.toggle("scrolled", e.target.scrollTop > 4));
 
 $("search").addEventListener("submit", e => {
   e.preventDefault();

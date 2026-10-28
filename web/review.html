@@ -24,7 +24,7 @@
   <p style="text-align:center;margin-top:16px"><a id="change" href="/find">Change lot</a></p>
 </main>
 <script type="module">
-import { api, esc, session, recent, lotPhotoStyle } from "/static/common.js";
+import { api, esc, session, recent, lotPhotoStyle, lotPhotoCredit } from "/static/common.js";
 const $ = id => document.getElementById(id);
 const p = session.pending;
 if (!p) {
@@ -34,6 +34,7 @@ if (!p) {
   $("change").href = back;
   $("sheet").innerHTML = `
     <div class="cover" style="${lotPhotoStyle(p.lot.lot_id, p.lot.lat, p.lot.lon, 1240, 360)}"></div>
+    <p class="cover-credit">${lotPhotoCredit(p.lot.lot_id)}</p>
     <dl class="rows">
       <div><dt>Lot</dt><dd>${esc(p.lot.name)}</dd></div>
       <div><dt>Address</dt><dd>${esc(p.lot.address || "Unavailable")}</dd></div>

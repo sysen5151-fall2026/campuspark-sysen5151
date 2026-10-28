@@ -594,3 +594,17 @@ floating over it, and the map's padding accounts for the floating panel. Primary
 glowing pills; the pass has a moving sheen. While testing, a booking failed because the local database
 file had been deleted under the running server; the server was restarted, and test data is now cleared
 only with the server stopped.
+
+**Follow-up, same day: readable glass, map rotation, real lot photos.** Hangting asked for glass that stays
+transparent without hurting reading, a way to rotate the map, and real photos instead of generated ones.
+The glass now follows Apple's two materials: "regular" glass for panels you read, whose backdrop filter
+blurs and dims what is behind (so type keeps its contrast while colour still shows through), and "thin"
+glass for small controls; inner tiles are plain fills, and a gradient rim lights the top-left and
+bottom-right edges. Over the night map the glass is clearer, since the map is already dark; the day map
+flips every token to light glass with dark type and dark buttons. Secondary text was raised to 70% and
+52% opacity. The map gained a rotation dial (turn left, a compass that shows the heading and turns back
+to north, turn right, and a slow spin; a tap turns 45 degrees, holding keeps turning; Q, E and N on the
+keyboard), and the camera now keeps the floating panels as padding, so fly-ins and rotation centre on the
+visible map. The generated lot photos were removed. No freely licensed photo of the fixture lots exists,
+so each lot shows a real Wikimedia Commons photo of a comparable campus lot or garage, labelled "Similar
+lot" with author and licence; the aerial tab still shows the actual spot.

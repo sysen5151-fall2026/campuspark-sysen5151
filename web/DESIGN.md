@@ -1,10 +1,13 @@
 # CampusPark visual design
 
 **Look: Liquid Glass.** Every page sits on a night scene (the generated photographs, blurred, with two slow
-amber and blue light fields and a fine grain), and every surface is frosted glass: a translucent fill, a
-28px backdrop blur, a lit top edge and a soft drop shadow. Primary actions are white glowing pills;
-secondary ones are glass. On the results page the map is the page and the list, search and lot card float
-over it, as in Apple Maps.
+amber and blue light fields and a fine grain). Surfaces use Apple's two glass materials: *regular* glass
+for anything read (a light tint over a backdrop that is blurred and dimmed, so text keeps its contrast
+while colour still shows through) and *thin* glass for small controls. Glass never sits on glass: tiles
+inside a panel are plain fills. A gradient rim lights each edge, brightest at the top left. Primary
+actions are white glowing pills; secondary ones are thin glass. On the results page the map is the page
+and the list, search and lot card float over it, as in Apple Maps; the day map switches every surface to
+light glass with dark type.
 
 **Subject.** A campus driver, about to leave for Cornell, wants to know which lots their permit allows
 and to hold a place before driving. The product follows the shape of the booking apps drivers already
@@ -29,8 +32,10 @@ the review page, and the confirmation is a page of its own.
 
 | Name | Value | Role |
 | --- | --- | --- |
-| Ink | `#f5f5f7` at 100, 82, 62 and 44% | type, in four steps |
-| Glass | fill `rgba(28,31,40,.42)`, edge `rgba(255,255,255,.16)`, blur 28px | every surface |
+| Ink | `#f5f5f7` at 100 and 88%, then `#ebebf5` at 70 and 52% | type, in four steps (day map: `#1d1d1f` and `#3c3c43`) |
+| Regular glass | tint `rgba(18,20,27,.30)`, backdrop `blur(24px) saturate(190%) brightness(.6)` | panels, sheets, cards, the pass |
+| Thin glass | tint `rgba(18,20,27,.14)`, backdrop `blur(10px) saturate(180%) brightness(.72)` | chips, map controls, markers |
+| Rim | 1px gradient ring, white 62% top left to 3% mid to 32% bottom right | every glass edge |
 | White pill | `#ffffff` to `#e9eaee` with a soft white glow | primary actions |
 | Blue | `#2997ff` | links and the destination |
 | Sodium amber | `#ffb547` | the brand mark, the permit tag, the pass header |
@@ -43,9 +48,10 @@ Type: the system San Francisco stack. Home headline 104px at 700 with tight trac
 ## Imagery
 
 Photographic images generated for the project (see `web/static/media/README.md`), never stock
-footage of real people or plates: a hero and three "how it works" tiles. Lot pictures are real
-aerial photos from USGS (public domain), not generated. Every
-image slot has a gradient fallback, so the pages work before the images arrive.
+footage of real people or plates: a hero and three "how it works" tiles. Lot pictures are never
+generated: each lot shows a real, freely licensed Wikimedia Commons photo of a comparable campus lot,
+labelled "Similar lot" with its author and licence, and an aerial of the actual spot from USGS (public
+domain). Every image slot has a gradient fallback, so the pages work before the images arrive.
 
 ## Map
 
@@ -55,7 +61,10 @@ fill-extrusion layer. Lot and destination pins sit on real places from OpenStree
 and the destinations by name; the other fixture lots on the nearest real parking area). Lots the permit
 allows raise an amber beam whose height is the share of places free and pulse a soft glow; the walk is
 an arched trail with moving dashes and a travelling light; the destination pings. Opening a lot flies
-the camera in and then orbits slowly until the driver touches the map. Lot photos are real aerials from
+the camera in and then orbits slowly until the driver touches the map. A rotation dial sits bottom
+right: turn left, a compass that shows the heading and turns back to north, turn right, and a slow spin
+(a tap turns 45 degrees, holding keeps turning; Q, E and N on the keyboard). The camera keeps the
+floating panels as padding, so fly-ins and rotation centre on the visible map. Lot photos are real aerials from
 USGS The National Map (public domain), cropped around each lot.
 
 ## Motion
