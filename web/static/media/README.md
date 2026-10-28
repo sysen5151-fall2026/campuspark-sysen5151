@@ -6,7 +6,6 @@ files; every one has a gradient fallback, so a missing file never breaks a page.
 | File | Size | Used on |
 | --- | --- | --- |
 | `hero-autumn.avif`, `.webp`, `.jpg` | 1672 x 940 | home page background (supplied by Hangting on 2026-10-28; 195, 246 and 484 KB; browsers take the first they support). The night hero it replaced stays in git history. |
-| `loop.mp4` (optional) | 1920 x 1080, 6 to 8 s | home page; add the file and `data-film="/static/media/loop.mp4"` on the video tag |
 | `permit.jpg`, `count.jpg`, `held.jpg` | 1200 x 1500 | fallback for browsers without AVIF or WebP |
 | `permit-800.avif`/`.webp`, `count-800.*`, `held-800.*` | 800 x 1000 | home page "how it works" tiles (a tile is about 380 px wide, so 800 covers a retina screen) |
 | `permit-bg.jpg`, `count-bg.jpg`, `held-bg.jpg` | 360 x 450 | the blurred backdrops; the blur hides any detail beyond this size |
@@ -20,6 +19,28 @@ files for a week, so a replaced image needs a new file name.
 The images above are AI-generated concept images (`generation-prompts.json` records the prompts; its four
 `lot-*` entries are kept for the record, but those files were removed on 2026-10-28). Files here are
 compressed web copies: hero 2560 px wide, tiles 1200 px.
+
+## Home page scenes
+
+The home page plays one of six scenes (`static/scenes.js`): a weather effect over a photograph. The autumn
+scene uses `hero-autumn`; the others use real, freely licensed photographs of Ithaca and Cornell from
+Wikimedia Commons, loaded from Commons at 1280 or 1920 px and credited at the bottom right of the page.
+
+| Scene | Photo | Author | Licence |
+| --- | --- | --- | --- |
+| Cherry blossom | [Cornell Botanic Gardens](https://commons.wikimedia.org/wiki/File:The_Cornell_Botanic_Gardens.jpg) | Bimala Rai Colavito | CC BY-SA 4.0 |
+| Cherry blossom | [Beebe Lake and Triphammer Falls](https://commons.wikimedia.org/wiki/File:Cornell_University_-_Beebe_Lake_and_Triphammer_Falls.jpg) | P. Hughes | CC BY 4.0 |
+| Snow | [Ithaca Falls in winter](https://commons.wikimedia.org/wiki/File:Ithaca_Falls_in_winter_3_(44330311385).jpg) | VillageHero | CC BY-SA 2.0 |
+| Snow | [Buttermilk Falls in winter](https://commons.wikimedia.org/wiki/File:Buttermilk_falls_in_winter_(Ithaca)_(44518698994).jpg) | VillageHero | CC BY-SA 2.0 |
+| Rain | [Ithaca Falls](https://commons.wikimedia.org/wiki/File:Ithaca_Falls_01.jpg) | LBM1948 | CC BY-SA 4.0 |
+| Rain | [Cascadilla Gorge Trail](https://commons.wikimedia.org/wiki/File:Ithaca_-_Cascadilla_Gorge_Trail.jpg) | P. Hughes | CC BY 4.0 |
+| Sunny | [Cayuga Lake from the Johnson Museum](https://commons.wikimedia.org/wiki/File:Ithaca,_NY_01.jpg) | LBM1948 | CC BY-SA 4.0 |
+| Sunny | [Lower Taughannock Falls](https://commons.wikimedia.org/wiki/File:Lower_Taughannock_Falls_April_2024.jpg) | Awinch1001 | CC0 |
+| Dusk | [Sunset on Cayuga Lake, Stewart Park](https://commons.wikimedia.org/wiki/File:Sunset_on_the_lake_-_panoramio.jpg) | Arseny Khakhalin | CC BY 3.0 |
+| Dusk | [Sunrise at Beebe Lake](https://commons.wikimedia.org/wiki/File:Sunrise_at_Beebe_Lake_(4026352842).jpg) | Yisong Yue | CC BY-SA 2.0 |
+
+No freely licensed photo of cherry trees in bloom in Ithaca was found, so the blossom scene's petals fall
+over spring views of the Botanic Gardens and Beebe Lake.
 
 ## Lot photos
 

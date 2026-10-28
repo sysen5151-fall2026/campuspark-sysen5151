@@ -644,3 +644,15 @@ itself in amber with a soft beam, rising motes and a tag that shows the arrival 
 leaves fall on two canvases, behind and in front of the words; the pointer drives a parallax and gusts
 of wind; scrolling pushes the camera in; the section below rises into view and its tiles tilt with a
 glare. The leaves pause when the hero is off screen, and reduced motion shows the final frame only.
+
+**Follow-up, same day: scenes.** Hangting liked the leaves and asked for more weather (cherry blossom,
+snow, rain, sun) with the background changing to match, a random scene by default, a menu to pick one or
+shuffle, and more backgrounds from real photos of Cayuga Lake and Ithaca. `static/scenes.js` now lists
+six scenes, each a particle effect and one or two Wikimedia Commons photographs (licences checked, places
+checked against each file's description and categories; a 7:1 panorama of the Arts Quad in snow was left
+out because no standard thumbnail is tall enough to fill a screen). It runs in the page head so the photo
+starts loading before the page draws. `home.js` gained petal, snow, rain (with splashes and lightning),
+sun (motes, with rays and a pointer-led lens flare in CSS) and firefly particles, cross-fades between
+photos, a menu with Shuffle (every 20 seconds, with a countdown ring) and Surprise me, and per-scene tints
+and shading. The amber outline appears only on the photo it was traced from. The unused video option was
+removed. No free photo of Ithaca's cherry trees in bloom was found, so the blossom scene uses spring views.

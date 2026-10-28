@@ -82,15 +82,24 @@ state, so an idle map does no re-tiling.
 
 ## Motion
 
-The home page is a short film made from one photograph. The camera pulls focus as the page opens; the
-headline's words rise out of a blur one by one and a warm light sweeps across them now and then; the
-empty space between the painted lines in the photo outlines itself in amber, a soft light rises from it
-and a tag floats above it reading "Held for you" with the times being typed into the search. Autumn
-leaves drift at two depths, one layer behind the words and a few large blurred ones in front. The pointer
-moves the photo, the leaves and the words at different speeds, and scrolling pushes the camera in while
-the words lift away. Below, the section rises into view and the tiles tilt toward the pointer with a
-moving glare. The outline is drawn in the photo's pixels in an SVG that crops exactly like the photo, so
-it stays on the space at any window size (it is left out of the narrower phone crop).
+The home page is a short film made from one photograph, in one of six scenes: autumn leaves over the
+project's own campus photo, cherry blossom petals over the Botanic Gardens or Beebe Lake, snow over Ithaca
+or Buttermilk Falls in winter, rain (with splashes and the odd lightning flash) over Ithaca Falls or
+Cascadilla Gorge, sun (slow rays, a glow and a lens flare that follows the pointer, warm motes) over
+Cayuga Lake or Taughannock Falls, and dusk fireflies over Cayuga Lake or Beebe Lake. Each scene also tints
+the photo a little. A scene is picked at random on each visit; a menu at the bottom left chooses one,
+shuffles them every 20 seconds (a ring counts down), or goes back to a surprise on each visit, and the
+choice is remembered on that device. Scenes cross-fade.
+
+Within a scene the camera pulls focus as the page opens; the headline's words rise out of a blur one by
+one and a warm light sweeps across them now and then; particles fall at two depths, one layer behind the
+words and a few large blurred ones in front. In the autumn scene the empty space between the painted
+lines outlines itself in amber, a soft light rises from it and a tag floats above it reading "Held for
+you" with the times being typed into the search; the outline is drawn in the photo's pixels in an SVG
+that crops exactly like the photo, so it stays on the space at any window size (it is left out of the
+narrower phone crop). The pointer moves the photo, the particles and the words at different speeds, and a
+sweep of the mouse is a gust of wind; scrolling pushes the camera in while the words lift away. Below,
+the section rises into view and the tiles tilt toward the pointer with a moving glare.
 
 Elsewhere motion stays small: the details panel slides over the list, the map eases to the chosen lot,
 and the success check draws itself before the pass appears. Under `prefers-reduced-motion` everything

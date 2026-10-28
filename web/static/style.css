@@ -168,13 +168,84 @@ body.home { background: var(--night); }
          animation: focus 2.8s cubic-bezier(.2, .65, .2, 1) both; will-change: transform; }
 @keyframes focus { from { transform: scale(1.16); filter: blur(18px) saturate(.5) brightness(.6); } }
 .stage picture { display: contents; }
-.stage video[hidden] { display: none; }
-.stage img, .stage video, .stage .scrim, .stage .slot { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-.stage img, .stage video { object-fit: cover; }
+.stage .photos, .stage .photo, .stage img, .stage .scrim, .stage .scrim2, .stage .slot { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.stage img { object-fit: cover; object-position: var(--focus, 50% 50%); }
+/* scenes cross-fade: the new photo fades in over the old one, which is then removed */
+.photo { opacity: 0; transition: opacity 1.6s cubic-bezier(.4, 0, .2, 1); }
+.photo.on { opacity: 1; }
+.stage .scrim2 { background: radial-gradient(62% 46% at 50% 46%, rgba(6, 9, 14, .55), rgba(6, 9, 14, 0) 100%);
+                 opacity: var(--scrim2, 0); transition: opacity 1.6s; }
+.hero:not([data-slot]) .slot { display: none; }
 .stage .scrim { /* a soft shade behind the words keeps them legible on the bright afternoon sky; the edges stay bright */
                 background: radial-gradient(56% 40% at 50% 46%, rgba(6, 9, 14, .5), rgba(6, 9, 14, .18) 62%, rgba(6, 9, 14, 0) 100%),
                             linear-gradient(180deg, rgba(5, 7, 11, .42) 0%, rgba(5, 7, 11, .08) 22%, rgba(5, 7, 11, .06) 66%, rgba(5, 7, 11, .9) 100%); }
 .hero-media .shade { position: absolute; inset: 0; background: #05070b; opacity: calc(var(--p) * .75); pointer-events: none; }
+
+/* each effect tints the photograph a little, as the weather would */
+.hero-media .tint, .hero-media .flash, .sunfx { position: absolute; inset: 0; pointer-events: none; }
+.tint { opacity: 0; transition: opacity 1.6s, background 1.6s; }
+[data-fx="rain"] .tint { opacity: 1; background: linear-gradient(180deg, rgba(16, 26, 42, .5), rgba(10, 14, 22, .25) 60%, rgba(10, 14, 22, .4)); }
+[data-fx="snow"] .tint { opacity: 1; background: linear-gradient(180deg, rgba(210, 225, 245, .14), rgba(20, 30, 45, .1)); }
+[data-fx="fireflies"] .tint { opacity: 1; background: linear-gradient(0deg, rgba(255, 130, 50, .2), rgba(40, 20, 60, .18) 70%); }
+[data-fx="petals"] .tint { opacity: 1; background: radial-gradient(90% 70% at 70% 0%, rgba(255, 190, 210, .18), transparent 70%); }
+.flash { background: radial-gradient(120% 80% at 60% 0%, rgba(235, 240, 255, .9), rgba(200, 210, 240, .25) 60%, transparent); opacity: 0; }
+.flash.on { animation: lightning 1.2s ease-out; }
+@keyframes lightning { 0% { opacity: 0; } 4% { opacity: .85; } 9% { opacity: .1; } 14% { opacity: .65; } 40% { opacity: .15; } 100% { opacity: 0; } }
+
+/* sunny: slow rays turning around the sun, its glow, and a lens flare that follows the pointer */
+.sunfx { opacity: 0; transition: opacity 1.6s; overflow: hidden; --sx: 80%; --sy: 6%; }
+[data-fx="sun"] .sunfx { opacity: 1; }
+.sunfx .rays { position: absolute; left: calc(var(--sx) - 150vmax); top: calc(var(--sy) - 150vmax); width: 300vmax; height: 300vmax;
+               background: repeating-conic-gradient(from 0deg, rgba(255, 242, 210, .14) 0deg 2.5deg, rgba(255, 242, 210, 0) 2.5deg 12deg);
+               -webkit-mask: radial-gradient(circle, #000 0, rgba(0, 0, 0, .4) 7%, transparent 22%); mask: radial-gradient(circle, #000 0, rgba(0, 0, 0, .4) 7%, transparent 22%);
+               filter: blur(3px); mix-blend-mode: screen; animation: spin 140s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.sunfx .sunglow { position: absolute; inset: 0; mix-blend-mode: screen;
+                  background: radial-gradient(circle at var(--sx) var(--sy), rgba(255, 250, 230, .85) 0, rgba(255, 220, 150, .35) 7%, rgba(255, 200, 120, .08) 30%, transparent 55%); }
+.sunfx .flare { position: absolute; left: var(--fx, 50%); top: var(--fy, 50%); width: calc(40px + var(--k) * 70px); aspect-ratio: 1; border-radius: 50%;
+                translate: -50% -50%; mix-blend-mode: screen; opacity: .5;
+                background: radial-gradient(circle, rgba(255, 230, 170, .35), rgba(255, 180, 120, .12) 55%, transparent 70%); }
+.sunfx .flare.ring { background: radial-gradient(circle, transparent 55%, rgba(170, 220, 255, .28) 62%, transparent 70%); }
+
+/* the scene menu, bottom left, and the photo's credit, bottom right */
+.scene-ui { position: absolute !important; left: 24px; bottom: 24px; z-index: 4 !important; animation: rise 1s 1.6s backwards; }
+.scene-btn { position: relative; display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px 0 8px; border: 0; border-radius: 999px; cursor: pointer;
+             font-size: 13px; font-weight: 600; color: var(--ink);
+             background: var(--lg-lens), var(--lg-tint); -webkit-backdrop-filter: var(--lg-filter); backdrop-filter: var(--lg-filter);
+             box-shadow: var(--lg-inner), 0 10px 30px rgba(0, 0, 0, .3); text-shadow: var(--lift); }
+.scene-btn::after { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none; background: var(--lg-rim);
+                    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+                    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude; }
+.scene-btn:hover { background: var(--lg-lens), var(--well-hi); }
+.scene-ico { position: relative; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; text-shadow: none;
+             color: #1a1206; background: linear-gradient(160deg, #ffd690, var(--amber)); box-shadow: 0 0 14px rgba(255, 181, 71, .5); }
+.scene-ico svg, .scene-menu svg { width: 15px; height: 15px; stroke-width: 2; }
+.scene-btn .caret { width: 14px; height: 14px; opacity: .7; transition: rotate .25s; }
+.scene-btn[aria-expanded="true"] .caret { rotate: 180deg; }
+/* in shuffle, a thin ring around the icon counts down to the next scene */
+.scene-btn .clock { position: absolute; left: 5px; top: 5px; width: 30px; height: 30px; rotate: -90deg; display: none; }
+.scene-btn .clock circle { fill: none; stroke: #fff; stroke-width: 2.5; stroke-dasharray: 100; stroke-linecap: round; }
+[data-mode="shuffle"] .scene-btn .clock { display: block; }
+.scene-btn .clock.run circle { animation: countdown var(--shuffle, 20s) linear forwards; }
+@keyframes countdown { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
+.scene-menu { position: absolute; left: 0; bottom: 52px; width: 270px; padding: 8px; border-radius: 22px; text-align: left;
+              background: var(--lg-lens), rgba(18, 20, 27, .5); -webkit-backdrop-filter: blur(30px) saturate(190%) brightness(.55); backdrop-filter: blur(30px) saturate(190%) brightness(.55);
+              box-shadow: var(--lg-inner), inset 0 0 0 1px rgba(255, 255, 255, .12), 0 24px 60px rgba(0, 0, 0, .45); transform-origin: 20px 100%;
+              animation: pop .28s cubic-bezier(.2, .8, .2, 1.1); }
+.scene-menu[hidden] { display: none; }
+@keyframes pop { from { opacity: 0; transform: scale(.9) translateY(8px); } }
+.scene-menu p { margin: 6px 10px 6px; font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-4); }
+.scene-menu button { width: 100%; display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 0; border-radius: 12px; cursor: pointer;
+                     background: transparent; color: var(--ink); font-size: 14px; font-weight: 500; text-align: left; }
+.scene-menu button:hover { background: var(--well-hi); }
+.scene-menu button i { width: 28px; height: 28px; flex: none; border-radius: 9px; display: grid; place-items: center; background: var(--well-hi); }
+.scene-menu button small { display: block; font-size: 11.5px; color: var(--ink-3); font-weight: 500; }
+.scene-menu button[aria-checked="true"] { background: rgba(255, 181, 71, .16); box-shadow: inset 0 0 0 1px rgba(255, 181, 71, .45); }
+.scene-menu button[aria-checked="true"] i { color: #1a1206; background: linear-gradient(160deg, #ffd690, var(--amber)); }
+.scene-menu hr { border: 0; border-top: 1px solid var(--line); margin: 6px 4px; }
+.photo-credit { position: absolute !important; right: 24px; bottom: 26px; margin: 0; max-width: 46vw; font-size: 11.5px; color: rgba(255, 255, 255, .78);
+                text-align: right; text-shadow: 0 1px 3px rgba(0, 0, 0, .7); animation: fade-in 1s 2s backwards; }
+.photo-credit a { color: #fff; text-decoration: underline; text-decoration-color: rgba(255, 255, 255, .4); }
 
 /* the empty space, outlined in the photograph's own coordinates (the SVG crops exactly like the photo) */
 .slot { overflow: visible; }
@@ -201,7 +272,7 @@ body.home { background: var(--night); }
 .slot-tag .tag-text { font-size: 17px; }
 
 /* falling leaves: one layer behind the words, one in front of them */
-.leaves { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.leaves { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; transition: opacity .7s; }
 .hero-media .leaves { translate: calc(var(--mx) * -30px) calc(var(--my) * -18px); }
 .hero > canvas.leaves.front { position: absolute; z-index: 2; translate: calc(var(--mx) * -56px) calc(var(--my) * -30px); }
 
@@ -548,6 +619,8 @@ svg { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; s
   .search .go { grid-column: 1 / -1; width: 100%; border-radius: 999px; margin: 6px 0 0; }
   .stage img { object-position: 68% 50%; }   /* keep the clock tower in a narrow crop */
   .stage .slot { display: none; }             /* the outline is drawn for the centred crop only */
+  .scene-ui { left: 16px; bottom: 16px; }
+  .photo-credit { right: 16px; bottom: 70px; max-width: 70vw; font-size: 10.5px; }
   .tiles { grid-template-columns: 1fr; }
   body.find { height: auto; overflow: auto; }
   .split { display: flex; flex-direction: column; }
