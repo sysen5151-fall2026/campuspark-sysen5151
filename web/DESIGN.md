@@ -82,6 +82,16 @@ state, so an idle map does no re-tiling.
 
 ## Motion
 
-Small and purposeful: the hero text rises in once, the hero image settles from a slight zoom, the
-details panel slides over the list, the map eases to the chosen lot, and the success check draws
-itself before the pass appears. All of it is off under `prefers-reduced-motion`.
+The home page is a short film made from one photograph. The camera pulls focus as the page opens; the
+headline's words rise out of a blur one by one and a warm light sweeps across them now and then; the
+empty space between the painted lines in the photo outlines itself in amber, a soft light rises from it
+and a tag floats above it reading "Held for you" with the times being typed into the search. Autumn
+leaves drift at two depths, one layer behind the words and a few large blurred ones in front. The pointer
+moves the photo, the leaves and the words at different speeds, and scrolling pushes the camera in while
+the words lift away. Below, the section rises into view and the tiles tilt toward the pointer with a
+moving glare. The outline is drawn in the photo's pixels in an SVG that crops exactly like the photo, so
+it stays on the space at any window size (it is left out of the narrower phone crop).
+
+Elsewhere motion stays small: the details panel slides over the list, the map eases to the chosen lot,
+and the success check draws itself before the pass appears. Under `prefers-reduced-motion` everything
+shows in its final state and nothing moves.

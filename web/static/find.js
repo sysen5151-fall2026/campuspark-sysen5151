@@ -64,7 +64,12 @@ const ICON = {
 /* ------------------------------------------------------------------ the map */
 function addWorld() {
   const night = theme === "night";
-  const firstLabel = map.getStyle().layers.find(l => l.type === "symbol")?.id;
+  // the buildings go above every ground layer and below the labels. The night style puts a water label
+  // early, before its flat building footprints and roads, so "before the first label" would let those
+  // paint over the 3D buildings like misplaced shadows.
+  const layers = map.getStyle().layers;
+  const lastGround = layers.findLastIndex(l => l.type !== "symbol");
+  const firstLabel = layers.slice(lastGround + 1).find(l => l.type === "symbol")?.id;
   map.addLayer({
     id: "buildings-3d", type: "fill-extrusion", source: "openmaptiles", "source-layer": "building", minzoom: 13.5,
     paint: {

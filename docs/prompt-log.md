@@ -632,3 +632,15 @@ JPEG under a new name, `hero-autumn`, so week-long caches cannot keep the old pi
 out flat grey because of the image's odd height, so it was cropped by one row. The brighter sky needed a
 soft radial shade behind the headline and a firmer text shadow, the demo-ID hint now sits on a thin glass
 pill over the stone wall, and on phones the crop moves toward the clock tower.
+
+**Follow-up, same day: the night map's 3D, and a home page in motion.** Hangting saw odd shadows on the
+night map. The night style's first label layer comes early (a water name), so the 3D buildings had been
+inserted below its flat black building footprints and every road, which then painted over them. The
+buildings now go after the last ground layer and before the labels that follow it. For the home page
+Hangting asked for as much motion as possible. The photograph now opens with a pull of focus; the
+headline's words rise in turn with a recurring warm sweep; the empty space between the painted lines
+(found from the photo's pixels: lines at x 623 to 573 and 1003 to 1089 between y 776 and 864) outlines
+itself in amber with a soft beam, rising motes and a tag that shows the arrival and stay being typed;
+leaves fall on two canvases, behind and in front of the words; the pointer drives a parallax and gusts
+of wind; scrolling pushes the camera in; the section below rises into view and its tiles tilt with a
+glare. The leaves pause when the hero is off screen, and reduced motion shows the final frame only.

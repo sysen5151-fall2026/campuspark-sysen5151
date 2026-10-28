@@ -16,14 +16,49 @@
 
 <section class="hero">
   <div class="hero-media" aria-hidden="true">
-    <video id="hero-video" muted autoplay loop playsinline preload="none" hidden></video><!-- add data-film="/static/media/loop.mp4" to use a film -->
-    <picture id="hero-img">
-      <source srcset="/static/media/hero-autumn.avif" type="image/avif">
-      <source srcset="/static/media/hero-autumn.webp" type="image/webp">
-      <img src="/static/media/hero-autumn.jpg" alt="" fetchpriority="high" decoding="async" onerror="this.parentElement.remove()">
-    </picture>
+    <div class="stage">
+      <video id="hero-video" muted autoplay loop playsinline preload="none" hidden></video><!-- add data-film="/static/media/loop.mp4" to use a film -->
+      <picture id="hero-img">
+        <source srcset="/static/media/hero-autumn.avif" type="image/avif">
+        <source srcset="/static/media/hero-autumn.webp" type="image/webp">
+        <img src="/static/media/hero-autumn.jpg" alt="" fetchpriority="high" decoding="async" onerror="this.parentElement.remove()">
+      </picture>
+      <div class="scrim"></div>
+      <!-- the empty space between the painted lines, in the photo's own pixels (1672 x 940) -->
+      <svg class="slot" viewBox="0 0 1672 940" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <linearGradient id="beam-fill" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0" stop-color="#ffc463" stop-opacity=".42"/>
+            <stop offset=".6" stop-color="#ffb547" stop-opacity=".1"/>
+            <stop offset="1" stop-color="#ffb547" stop-opacity="0"/>
+          </linearGradient>
+          <filter id="soft" x="-20%" y="-60%" width="140%" height="220%"><feGaussianBlur stdDeviation="7"/></filter>
+          <filter id="haze" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="16"/></filter>
+        </defs>
+        <polygon class="slot-beam" points="650,780 976,780 900,630 726,630" fill="url(#beam-fill)" filter="url(#haze)"/>
+        <polygon class="slot-pool" points="634,778 992,778 1074,862 588,862"/>
+        <polygon class="slot-glow" points="634,778 992,778 1074,862 588,862" filter="url(#soft)"/>
+        <polygon class="slot-edge" points="634,778 992,778 1074,862 588,862" pathLength="100"/>
+        <g class="motes">
+          <circle cx="700" cy="790" r="2.6" style="animation-delay:3.4s"/><circle cx="760" cy="820" r="2" style="animation-delay:4.3s"/>
+          <circle cx="830" cy="800" r="3" style="animation-delay:3.9s"/><circle cx="890" cy="830" r="2.2" style="animation-delay:5.1s"/>
+          <circle cx="950" cy="795" r="2.4" style="animation-delay:4.7s"/><circle cx="800" cy="845" r="1.8" style="animation-delay:5.6s"/>
+          <circle cx="1000" cy="840" r="2" style="animation-delay:6.2s"/><circle cx="660" cy="840" r="2" style="animation-delay:6.6s"/>
+        </g>
+        <g transform="translate(831 820)">
+          <g class="slot-tag"><g class="tag-float">
+            <rect x="-150" y="-24" width="300" height="48" rx="24"/>
+            <circle cx="-121" cy="0" r="15"/>
+            <text class="tag-p" x="-121" y="6">P</text>
+            <text class="tag-text" x="-96" y="6" id="slot-text">Held for you · 09:00–11:00</text>
+          </g></g>
+        </g>
+      </svg>
+    </div>
+    <div class="shade"></div>
+    <canvas class="leaves back" id="leaves-back"></canvas>
   </div>
-  <h1>Your place<br>is waiting.</h1>
+  <h1 aria-label="Your place is waiting."><span class="w" style="--i:0">Your</span> <span class="w" style="--i:1">place</span><br><span class="w" style="--i:2">is</span> <span class="w" style="--i:3">waiting.</span></h1>
   <p class="lede">Lots your permit allows, with room for your whole stay. Held before you leave.</p>
 
   <form class="search" id="search" role="search" aria-label="Find parking">
@@ -53,20 +88,22 @@
     </button>
   </form>
   <p class="home-hint">Demo driver IDs: student01, staff01, visitor01</p>
+  <canvas class="leaves front" id="leaves-front" aria-hidden="true"></canvas>
 </section>
 
 <section class="how" id="how">
-  <h2>Three things, done before you drive.</h2>
-  <p class="sub">CampusPark does the checking a parking office would, in the second between your search and your booking.</p>
+  <h2 class="reveal">Three things, done before you drive.</h2>
+  <p class="sub reveal" style="--d:1">CampusPark does the checking a parking office would, in the second between your search and your booking.</p>
   <div class="tiles">
-    <article class="tile"><div class="ph permit"></div><div class="cap"><b>Your permit, read in a second.</b><span>Only lots that accept it are offered.</span></div></article>
-    <article class="tile"><div class="ph count"></div><div class="cap"><b>Every place counted.</b><span>A lot is offered only if a place stays free for your whole stay.</span></div></article>
-    <article class="tile"><div class="ph held"></div><div class="cap"><b>Held, not hoped for.</b><span>One booking per request. No one can take the same place.</span></div></article>
+    <article class="tile reveal" style="--d:1"><div class="ph permit"></div><div class="cap"><b>Your permit, read in a second.</b><span>Only lots that accept it are offered.</span></div></article>
+    <article class="tile reveal" style="--d:2"><div class="ph count"></div><div class="cap"><b>Every place counted.</b><span>A lot is offered only if a place stays free for your whole stay.</span></div></article>
+    <article class="tile reveal" style="--d:3"><div class="ph held"></div><div class="cap"><b>Held, not hoped for.</b><span>One booking per request. No one can take the same place.</span></div></article>
   </div>
 </section>
 
 <footer class="home-foot">A pilot on fixture permit and map data. Places are held in CampusPark's booking records; nothing senses an empty space.</footer>
 
+<script type="module" src="/static/home.js"></script>
 <script type="module">
 import { destinations, session, stepper, esc } from "/static/common.js";
 const $ = id => document.getElementById(id);

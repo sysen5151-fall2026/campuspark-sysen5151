@@ -93,7 +93,8 @@ export async function destinations() {
 export function stepper(root, min, max) {
   const out = root.querySelector("output"), input = root.querySelector("input");
   const show = () => { out.textContent = `${input.value} hr${input.value === "1" ? "" : "s"}`; };
-  root.querySelector("[data-dec]").addEventListener("click", () => { input.value = Math.max(min, +input.value - 1); show(); });
-  root.querySelector("[data-inc]").addEventListener("click", () => { input.value = Math.min(max, +input.value + 1); show(); });
+  const set = v => { input.value = v; show(); input.dispatchEvent(new Event("input", {bubbles: true})); };
+  root.querySelector("[data-dec]").addEventListener("click", () => set(Math.max(min, +input.value - 1)));
+  root.querySelector("[data-inc]").addEventListener("click", () => set(Math.min(max, +input.value + 1)));
   show();
 }
