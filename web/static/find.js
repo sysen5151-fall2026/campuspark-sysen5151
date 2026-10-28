@@ -421,6 +421,12 @@ function openDetail(lotId) {
   }
   const free = Math.round(100 * o.remaining / o.capacity);
   const walkTxt = o.walk_minutes === null ? "No estimate" : `${o.walk_minutes} min`;
+  // the trip in three moments: parking, arriving on foot (when the walk is known), and the place being released
+  const addMin = (hhmm, m) => { const [h, mm] = hhmm.split(":").map(Number), t = h * 60 + mm + m;
+                                return `${String(Math.floor(t / 60) % 24).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`; };
+  const steps = [[found.start, `Park at ${o.name}`],
+                 ...(o.walk_minutes === null ? [] : [[addMin(found.start, o.walk_minutes), `On foot at ${trip.destination}`]]),
+                 [found.end, "Your place is released"]];
   $("detail").innerHTML = `
     <div class="media" id="media">
       <div class="slides" id="slides">
@@ -439,9 +445,14 @@ function openDetail(lotId) {
       <p class="addr">${esc(o.address || "Address unavailable")}</p>
       <div class="quick">
         <div>${ICON.walk}<b>${walkTxt}</b><span>to ${esc(trip.destination)}</span></div>
-        <div>${ICON.park}<b>${o.remaining} free</b><span>of ${o.capacity}, whole stay</span></div>
+        <div>${ICON.park}<b><em class="count" data-count="${o.remaining}">${o.remaining}</em> free</b><span>of ${o.capacity}, whole stay</span></div>
         <div>${ICON.clock}<b>${esc(found.start)}–${esc(found.end)}</b><span>today</span></div>
       </div>
+
+      <section class="block">
+        <h4>Your trip</h4>
+        <ol class="timeline" style="--n:${steps.length}">${steps.map(([t, what], i) => `<li style="--i:${i}"><b>${esc(t)}</b><span>${esc(what)}</span></li>`).join("")}</ol>
+      </section>
 
       <section class="block">
         <h4>Places for your stay <small>${free}% free</small></h4>
@@ -463,6 +474,7 @@ function openDetail(lotId) {
     </div>`;
   $("detail").classList.add("open");
   document.querySelector(".side").classList.add("has-detail");
+  countUp($("detail"));
   $("back").addEventListener("click", closeDetail);
   // the aerial is drawn on demand by a slow map server, so it is fetched only once the card has settled
   const loadAerial = () => { const s = $("aerial-slide"); if (s && !s.style.backgroundImage) s.setAttribute("style", lotImageStyle(l?.lat, l?.lon, 960, 560)); };
@@ -485,6 +497,21 @@ function openDetail(lotId) {
     location.href = "/review";
   });
   $("back").focus();
+}
+
+// numbers count up from zero as the card opens
+function countUp(root) {
+  root.querySelectorAll("[data-count]").forEach(el => {
+    const to = Number(el.dataset.count);
+    if (reduced || !to) return;
+    const t0 = performance.now();
+    const step = t => {
+      const k = Math.min(1, (t - t0) / 900);
+      el.textContent = Math.round(to * (1 - Math.pow(1 - k, 3)));
+      if (k < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  });
 }
 
 function closeDetail() {
@@ -524,6 +551,25 @@ async function search(intro) {
 
 // a hairline under the list heading once the list scrolls beneath it
 $("results").addEventListener("scroll", e => document.querySelector(".side-head").classList.toggle("scrolled", e.target.scrollTop > 4));
+
+addEventListener("keydown", e => {
+  if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey || e.target.closest?.("input, select, textarea, .maplibregl-canvas")) return;
+  const open = $("detail").classList.contains("open");
+  if (e.key === "Escape" && open) { closeDetail(); return; }
+  if ((e.key === "ArrowDown" || e.key === "ArrowUp") && !open && found?.options.length) {
+    e.preventDefault();
+    const ids = found.options.map(o => o.lot_id), i = ids.indexOf(hovered);
+    const next = ids[(i + (e.key === "ArrowDown" ? 1 : -1) + ids.length) % ids.length];
+    document.querySelector(`.res[data-lot="${next}"]`)?.focus();
+  }
+});
+
+window.CP_COMMANDS = [
+  {title: "Day or night map", hint: "Switch the map's light", run: () => document.querySelectorAll(".dim-toggle")[1]?.click()},
+  {title: "2D or 3D view", hint: "Tilt the map or lay it flat", run: () => document.querySelectorAll(".dim-toggle")[0]?.click()},
+  {title: "Face north", hint: "Turn the map back to north", run: () => document.querySelector(".dial .compass")?.click()},
+  {title: "Spin the map", hint: "Turn slowly around the view", run: () => document.querySelector(".dial .spin")?.click()},
+];
 
 $("search").addEventListener("submit", e => {
   e.preventDefault();

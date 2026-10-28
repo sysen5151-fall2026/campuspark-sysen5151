@@ -12,12 +12,30 @@ async function loadPools() {
     <tr>
       <td><div class="name">${esc(p.name)}</div><div class="id">${esc(p.pool_id)}</div></td>
       <td>${p.permits.map(x => `<span class="pchip">${esc(x)}</span>`).join("")}</td>
-      <td><div class="cap">${p.capacity}</div></td>
+      <td><div class="cap" data-count="${p.capacity}">${p.capacity}</div></td>
       <td>${p.closures.length ? p.closures.map(c => `<span class="closed">${esc(c.start)} to ${esc(c.end)}</span>`).join("<br>") : "Open all day"}</td>
     </tr>`).join("");
+  countUp();
   const keep = $("pool").value;
   $("pool").innerHTML = d.pools.map(p => `<option value="${esc(p.pool_id)}">${esc(p.name)}</option>`).join("");
   if (keep) $("pool").value = keep;
+}
+
+// place counts roll up to their value when the table is drawn or changes
+const shown = {};
+function countUp() {
+  document.querySelectorAll(".pools [data-count]").forEach((el, i) => {
+    const to = Number(el.dataset.count), from = shown[i] ?? 0;
+    shown[i] = to;
+    if (from === to || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const t0 = performance.now();
+    const step = t => {
+      const k = Math.min(1, (t - t0) / 900);
+      el.textContent = Math.round(from + (to - from) * (1 - Math.pow(1 - k, 3)));
+      if (k < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  });
 }
 
 $("change").addEventListener("submit", async e => {

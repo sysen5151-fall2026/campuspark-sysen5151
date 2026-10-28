@@ -396,6 +396,11 @@ function toggleMenu(open = $("scene-menu").hidden) {
   if (open) { renderMenu(); $("scene-menu").querySelector('[aria-checked="true"]')?.focus(); }
 }
 $("scene-btn").addEventListener("click", () => toggleMenu());
+// the same choices in the ⌘K menu
+window.CP_COMMANDS = [
+  {title: "Shuffle scenes", hint: "A new scene every 20 seconds", run: () => choose("shuffle")},
+  ...scenes.map(s => ({title: `Scene: ${s.name}`, hint: s.photos.map(p => p.place || "Cornell, autumn").join(" · "), run: () => choose(s.id)})),
+];
 $("scene-menu").addEventListener("click", e => {
   const b = e.target.closest("button[data-value]");
   if (b) { choose(b.dataset.value); toggleMenu(false); $("scene-btn").focus(); }

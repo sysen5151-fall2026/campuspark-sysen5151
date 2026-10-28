@@ -54,6 +54,13 @@ def test_every_page_is_served(path):
     assert r.headers["cache-control"] == "no-cache"
 
 
+def test_a_missing_page_gets_a_page_and_the_api_keeps_json():
+    page = client.get("/no-such-page")
+    assert page.status_code == 404 and "This space is empty" in page.text
+    api = client.get("/api/no-such-thing")
+    assert api.status_code == 404 and api.json() == {"detail": "Not Found"}
+
+
 def test_text_is_compressed_and_images_are_cached():
     css = client.get("/static/style.css", headers={"Accept-Encoding": "gzip"})
     assert css.headers["content-encoding"] == "gzip" and css.headers["cache-control"] == "no-cache"

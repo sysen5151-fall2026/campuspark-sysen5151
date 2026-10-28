@@ -5,6 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Review your booking · CampusPark</title>
 <link rel="stylesheet" href="/static/style.css">
+<meta name="description" content="Hold a campus parking place your permit allows, before you leave.">
+<meta name="theme-color" content="#05070b">
+<link rel="icon" href="/static/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/static/icon-180.png">
+<link rel="manifest" href="/static/manifest.json">
+<meta property="og:title" content="CampusPark">
+<meta property="og:description" content="Lots your permit allows, with room for your whole stay. Held before you leave.">
+<meta property="og:image" content="/static/media/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<script type="module" src="/static/fx.js"></script>
 <link rel="preconnect" href="https://upload.wikimedia.org">
 </head>
 <body class="glass-page">
@@ -20,7 +30,13 @@
   <div class="sheet" id="sheet"></div>
   <p class="policy">The place is held in CampusPark's records for the period above. If staff close the lot or cut its places,
     your booking stays and they will contact you. Cancelling is not available in this pilot.</p>
-  <button class="btn big full" id="confirm" type="button">Confirm and hold this place</button>
+  <!-- slide to confirm: holding a place is the one step that commits, so it asks for a deliberate gesture.
+       It is still a button: Enter or Space confirms from the keyboard. -->
+  <button class="slide" id="confirm" type="button" aria-label="Confirm and hold this place">
+    <span class="slide-fill"></span>
+    <span class="slide-text" id="slide-text">Slide to hold your place</span>
+    <span class="slide-knob"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+  </button>
   <div id="error" aria-live="assertive"></div>
   <p style="text-align:center;margin-top:16px"><a id="change" href="/find">Change lot</a></p>
 </main>
@@ -44,22 +60,70 @@ if (!p) {
       <div><dt>Permit</dt><dd><span style="text-transform:capitalize">${esc(p.permit)}</span>, checked for this lot</dd></div>
       <div><dt>Driver</dt><dd>${esc(p.trip.driver_id)}</dd></div>
     </dl>`;
-  $("confirm").addEventListener("click", async () => {
-    $("confirm").disabled = true;
-    $("confirm").textContent = "Holding your place…";
+  const slide = $("confirm"), knob = slide.querySelector(".slide-knob");
+  const ARROW = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+  const SPIN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9"/></svg>';
+  const TICK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  const travel = () => slide.clientWidth - knob.offsetWidth - 12;
+  const setX = x => { slide.style.setProperty("--x", `${x}px`); slide.style.setProperty("--k", (x / travel()).toFixed(3)); };
+  let busy = false;
+
+  async function hold() {
+    if (busy) return;
+    busy = true;
+    slide.classList.add("springing", "busy");
+    setX(travel());
+    knob.innerHTML = SPIN;
+    $("slide-text").textContent = "Holding your place…";
     $("error").innerHTML = "";
     const res = await api("/api/reserve", {...p.trip, lot_id: p.lot.lot_id, search_id: p.search_id, request_id: p.request_id});
     if (res.error) {
-      $("confirm").disabled = false;
-      $("confirm").textContent = "Try again";
+      busy = false;
+      slide.classList.remove("busy");
+      setX(0);
+      knob.innerHTML = ARROW;
+      $("slide-text").textContent = "Slide to try again";
       $("error").innerHTML = `<p class="err">${esc(res.error)} <a href="${back}">Choose another lot</a></p>`;
       return;
     }
-    recent.add({id: res.confirmation, lot: res.lot, start: res.start, end: res.end, driver: p.trip.driver_id});
+    slide.classList.replace("busy", "done");
+    knob.innerHTML = TICK;
+    $("slide-text").textContent = "Held";
+    navigator.vibrate?.(18);
+    recent.add({id: res.confirmation, lot: res.lot, start: res.start, end: res.end, driver: p.trip.driver_id, day: new Date().toDateString()});
     session.put("cp.justBooked", res.confirmation);
     session.pending = null;
-    location.href = `/booking/${encodeURIComponent(res.confirmation)}`;
+    setTimeout(() => { location.href = `/booking/${encodeURIComponent(res.confirmation)}`; }, 450);
+  }
+
+  // drag the knob to the end; let go early and it springs back
+  let x0 = null, dragged = false;
+  slide.addEventListener("pointerdown", e => {
+    if (busy) return;
+    x0 = e.clientX - (parseFloat(slide.style.getPropertyValue("--x")) || 0);
+    dragged = false;
+    slide.classList.remove("springing");
+    slide.setPointerCapture(e.pointerId);
   });
+  slide.addEventListener("pointermove", e => {
+    if (x0 === null) return;
+    const x = Math.max(0, Math.min(travel(), e.clientX - x0));
+    if (x > 4) dragged = true;
+    setX(x);
+  });
+  const release = () => {
+    if (x0 === null) return;
+    x0 = null;
+    slide.classList.add("springing");
+    if ((parseFloat(slide.style.getPropertyValue("--x")) || 0) > travel() * 0.85) hold();
+    else {
+      setX(0);
+      if (!dragged) { slide.classList.remove("nudge"); void slide.offsetWidth; slide.classList.add("nudge"); }   // a tap shows how
+    }
+  };
+  slide.addEventListener("pointerup", release);
+  slide.addEventListener("pointercancel", release);
+  slide.addEventListener("click", e => { if (e.detail === 0) hold(); });   // keyboard: Enter or Space
 }
 </script>
 </body>

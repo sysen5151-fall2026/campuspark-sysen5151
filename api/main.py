@@ -12,7 +12,9 @@ from pathlib import Path
 from typing import List, Optional
 
 from fastapi import FastAPI
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.gzip import GZipMiddleware
+from fastapi.exception_handlers import http_exception_handler
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -57,6 +59,14 @@ app.add_middleware(CompressText)
 
 WEB = Path(__file__).resolve().parents[1] / "web"
 app.mount("/static", StaticFiles(directory=WEB / "static"), name="static")
+
+
+@app.exception_handler(StarletteHTTPException)
+async def page_not_found(request, exc):
+    """A missing page gets a page of its own; the API keeps its JSON errors."""
+    if exc.status_code == 404 and not request.url.path.startswith(("/api/", "/static/")):
+        return FileResponse(WEB / "404.html", status_code=404, headers={"Cache-Control": "no-cache"})
+    return await http_exception_handler(request, exc)
 
 # Shown next to any capacity number, because the number comes from our own
 # booking records. Nothing in this version senses an empty space.

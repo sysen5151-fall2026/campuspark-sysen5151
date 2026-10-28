@@ -69,6 +69,26 @@ right: turn left, a compass that shows the heading and turns back to north, turn
 floating panels as padding, so fly-ins and rotation centre on the visible map. Lot photos are real aerials from
 USGS The National Map (public domain), cropped around each lot.
 
+## Product details
+
+- **One app, not six pages.** Pages cross-fade with the View Transitions API, and the brand, the top bar,
+  the trip (the home search becomes the results page's summary), the lot photo (card to review) and the
+  ticket (review sheet to pass) carry over between pages.
+- **⌘K.** A command menu on every page (⌘K, Ctrl K or the Search button) reaches the pages, parking near
+  each destination for the next quarter hour, bookings made on the device, and the page's own controls
+  (scenes on the home page; day or night, 2D or 3D, north and spin on the map).
+- **Light on glass.** The pointer carries a soft light across every glass surface; primary buttons lean a
+  few pixels toward it.
+- **Results.** Arrow keys move through the list and Escape closes a card. Each card shows the trip as a
+  timeline: parking, arriving on foot, the place being released.
+- **Review.** Holding a place is the one step that commits, so it is a slide to confirm with the light
+  running along its label; Enter or Space confirms from the keyboard, and a tap shows how to slide.
+- **Pass.** It leans toward the pointer with a foil that catches the light, says live whether the booking
+  starts soon, is running (with the share of the stay gone) or has ended, and a new booking opens with a
+  burst of light from the check mark. My bookings shows the same live state for today's bookings.
+- **Small things.** An app icon, a web app manifest (installable), a share image and description, and a
+  404 page that draws an empty bay with the number painted in it. Staff place counts roll up.
+
 ## Weight
 
 Each picture is sent at the size it is drawn and in the lightest format the browser reads (AVIF, then

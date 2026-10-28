@@ -30,8 +30,10 @@ function render(b) {
         <p>Your place at ${esc(b.lot)} is held from ${esc(b.start)} to ${esc(b.end)}.</p>
       </div>` : `<p class="steps">My bookings</p><h1 style="margin-bottom:22px">Your booking.</h1>`}
     <article class="pass" aria-label="Parking pass">
+      <i class="holo" aria-hidden="true"></i>
       <div class="pass-top"><b>CampusPark</b><span>Held</span></div>
       <div class="pass-main">
+        <div class="live" id="live" aria-live="polite"><span class="dot"></span><b id="live-text"></b><span class="meter"><i id="live-bar"></i></span></div>
         <small>Lot</small>
         <p class="lot">${esc(b.lot)}</p>
         <div class="pass-grid">
@@ -56,6 +58,83 @@ function render(b) {
     <p class="fine">${esc(b.note)}</p>`;
   $("cal").href = ics(b);
   if (window.QRCode) new QRCode($("qr"), {text: b.confirmation, width: 92, height: 92, colorDark: "#111", colorLight: "#fff"});
+  live(b);
+  setInterval(() => live(b), 20000);
+  tilt(document.querySelector(".pass"));
+  if (fresh) burst();
+}
+
+// where today's booking stands right now: before it, during it (with the share of the stay gone), or after
+function live(b) {
+  const at = hhmm => { const [h, m] = hhmm.split(":").map(Number); const d = new Date(); d.setHours(h, m, 0, 0); return d; };
+  const start = at(b.start), end = at(b.end), now = new Date();
+  const span = mins => mins >= 60 ? `${Math.floor(mins / 60)} h ${mins % 60} min` : `${mins} min`;
+  const box = $("live");
+  let text, state, share = 0;
+  if (now < start) { state = "soon"; text = `Starts in ${span(Math.ceil((start - now) / 60000))}`; }
+  else if (now < end) { state = "now"; text = `Held now · ${span(Math.ceil((end - now) / 60000))} left`; share = (now - start) / (end - start); }
+  else { state = "over"; text = `Ended at ${b.end}`; share = 1; }
+  box.dataset.state = state;
+  $("live-text").textContent = text;
+  $("live-bar").style.width = `${Math.round(share * 100)}%`;
+}
+
+// the pass leans toward the pointer and its foil catches the light, like a card held in the hand
+function tilt(card) {
+  if (!card || matchMedia("(prefers-reduced-motion: reduce)").matches || !matchMedia("(hover: hover)").matches) return;
+  card.addEventListener("pointermove", e => {
+    const r = card.getBoundingClientRect(), x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+    card.classList.add("tilting");
+    card.style.setProperty("--ry", `${(x - 0.5) * 16}deg`);
+    card.style.setProperty("--rx", `${(0.5 - y) * 12}deg`);
+    card.style.setProperty("--hx", `${x * 100}%`);
+    card.style.setProperty("--hy", `${y * 100}%`);
+  });
+  card.addEventListener("pointerleave", () => {
+    card.classList.remove("tilting");
+    card.style.setProperty("--rx", "0deg");
+    card.style.setProperty("--ry", "0deg");
+  });
+}
+
+// when the booking has just been made: a burst of light from the check mark
+function burst() {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const check = document.querySelector(".check");
+  if (!check) return;
+  const c = document.createElement("canvas");
+  c.className = "burst";
+  document.body.appendChild(c);
+  const dpr = Math.min(2, devicePixelRatio || 1);
+  c.width = innerWidth * dpr; c.height = innerHeight * dpr;
+  const g = c.getContext("2d");
+  g.scale(dpr, dpr);
+  const r = check.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  const colors = ["#ffd690", "#ffb547", "#ffffff", "#7ee2a0", "#34c759"];
+  const sparks = Array.from({length: 90}, () => {
+    const a = Math.random() * Math.PI * 2, v = 160 + Math.random() * 420;
+    return {x: cx, y: cy, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 120, r: 1.2 + Math.random() * 2.6, life: 0.9 + Math.random() * 0.8,
+            color: colors[Math.floor(Math.random() * colors.length)]};
+  });
+  let t0 = null;
+  const frame = t => {
+    t0 ??= t;
+    const s = (t - t0) / 1000;
+    g.clearRect(0, 0, innerWidth, innerHeight);
+    let alive = 0;
+    for (const p of sparks) {
+      const k = s / p.life;
+      if (k >= 1) continue;
+      alive++;
+      const x = p.x + p.vx * s * (1 - k * 0.35), y = p.y + p.vy * s + 260 * s * s;
+      g.globalAlpha = 1 - k;
+      g.fillStyle = p.color;
+      g.shadowColor = p.color; g.shadowBlur = 8;
+      g.beginPath(); g.arc(x, y, p.r * (1 - k * 0.5), 0, Math.PI * 2); g.fill();
+    }
+    if (alive) requestAnimationFrame(frame); else c.remove();
+  };
+  setTimeout(() => { navigator.vibrate?.(14); requestAnimationFrame(frame); }, 650);
 }
 
 async function load(driverId) {

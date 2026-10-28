@@ -656,3 +656,15 @@ sun (motes, with rays and a pointer-led lens flare in CSS) and firefly particles
 photos, a menu with Shuffle (every 20 seconds, with a countdown ring) and Surprise me, and per-scene tints
 and shading. The amber outline appears only on the photo it was traced from. The unused video option was
 removed. No free photo of Ithaca's cherry trees in bloom was found, so the blossom scene uses spring views.
+
+**Follow-up, same day: product polish across the site.** Hangting asked for anything that would make the
+whole site feel more premium. Added: cross-document View Transitions (brand, top bar, trip, lot photo and
+ticket carry over between pages); a ⌘K command menu in a new shared `static/fx.js` (pages, parking near
+each destination, bookings on this device, and page commands for scenes and map controls); a pointer light
+on glass (a non-inheriting `--spot` custom property) and buttons that lean toward the pointer; arrow-key
+navigation and a trip timeline on the results page; a slide-to-confirm on the review page that stays a
+keyboard button; a pass that tilts with a foil, shows live whether the booking is soon, running or over,
+and opens with a burst after booking; live status chips on My bookings (new bookings record their day);
+count-ups on the staff page; an app icon, manifest, share image and a 404 page (the API keeps its JSON
+404, with a test for both). Tested in the browser end to end, including a booking made by sliding; the
+test booking was cleared afterwards with the server stopped.
