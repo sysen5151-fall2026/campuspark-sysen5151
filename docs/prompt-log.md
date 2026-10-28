@@ -518,3 +518,23 @@ diagram is not to scale.
 
 **Checked:** all suites unchanged (skeleton 43 passed). Search, pointing at a lot, holding a place,
 looking a booking up and applying a closure were run by hand at desktop and phone widths.
+
+---
+
+### 2026-10-28 · Hangting Zhu · Claude (Opus 5.5) · Third redesign: cinematic 3D product page
+
+**Asked for:** a premium, Apple-like page with high-quality animation and visuals that sets the project
+apart, without clutter. The flat Swiss version was not what Hangting meant.
+
+**Produced:** `web/static/scene.js` (a Three.js world generated entirely in code: a lit lot at dusk
+with cars, lamps, trees, wet asphalt, a sky dome, lit buildings and bloom; the same world as a campus
+map with amber availability beams, destination beams and an animated walking trail),
+`web/static/main.js` (scroll story with GSAP ScrollTrigger: hero, three beats, rise to campus; booking
+on the map from a glass panel), a new `style.css` and `index.html`, a light staff console, and a new
+`web/DESIGN.md`. `driver.js` from the Swiss version is removed. No backend change.
+
+**Assets:** none downloaded. Three.js 0.160.0 and GSAP 3.12.5 load from jsDelivr and cdnjs at run time.
+
+**Checked:** all suites unchanged (skeleton 43 passed; 20 Chapter 3 placeholders still fail). The
+scroll story, a search, pointing at a lot, holding a place and a staff closure were run by hand at
+desktop width; the hero was checked at phone width.

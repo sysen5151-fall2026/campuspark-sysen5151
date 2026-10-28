@@ -3,68 +3,46 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CampusPark Staff Console</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
+<title>CampusPark Staff</title>
 <link rel="stylesheet" href="/static/style.css">
 </head>
-<body>
+<body class="staff">
 
-<header class="top">
-  <span class="where">Parking Administrator</span>
+<header class="nav">
+  <a class="brand" href="/">CampusPark</a>
   <nav><a href="/">Driver view</a></nav>
 </header>
 
-<main class="poster">
-  <section class="left">
-    <h1 class="wordmark">staff<br>controls<span class="r">.</span></h1>
-    <p class="strap">What every search and booking is checked against right now. <span class="version" id="version"></span></p>
-    <table class="pools">
-      <thead><tr><th>Pool</th><th>Permits accepted</th><th>Places</th><th>Closed today</th></tr></thead>
-      <tbody id="pools"></tbody>
-    </table>
-  </section>
+<main class="staff-wrap">
+  <h1>Parking controls.</h1>
+  <p class="lede">What every search and booking is checked against right now. <span class="version" id="version"></span></p>
 
-  <section class="right">
-    <form class="step" onsubmit="submitChange(event)">
-      <div class="step-n">1</div>
-      <div>
-        <h2>Change a pool</h2>
-        <p class="lede">Only approved staff accounts can change a pool. The demo account is admin01.</p>
-        <label for="account">Staff account</label>
-        <input id="account" value="admin01" autocomplete="off" required>
-        <label for="pool">Pool</label>
-        <select id="pool"></select>
-        <label for="capacity">New number of places</label>
-        <input id="capacity" type="number" min="0" placeholder="Keep as is">
-        <div class="pair" style="grid-template-columns: 1fr 1fr">
-          <div>
-            <label for="close-start">Closed from</label>
-            <input id="close-start" type="time">
-          </div>
-          <div>
-            <label for="close-end">Until</label>
-            <input id="close-end" type="time">
-          </div>
+  <div class="staff-grid">
+    <section class="card">
+      <h2>In force</h2>
+      <table class="pools">
+        <thead><tr><th>Pool</th><th>Permits</th><th>Places</th><th>Closed today</th></tr></thead>
+        <tbody id="pools"></tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h2>Change a pool</h2>
+      <form id="change" class="fields">
+        <label><span>Staff account (demo: admin01)</span><input id="account" value="admin01" autocomplete="off" required></label>
+        <label><span>Pool</span><select id="pool"></select></label>
+        <label><span>New number of places</span><input id="capacity" type="number" min="0" placeholder="Keep as is"></label>
+        <div class="row" style="grid-template-columns: 1fr 1fr">
+          <label><span>Closed from</span><input id="close-start" type="time"></label>
+          <label><span>Until</span><input id="close-end" type="time"></label>
         </div>
         <label class="check"><input id="clear" type="checkbox"> Reopen it first (remove today's closures)</label>
-        <button class="go" type="submit">Apply the change</button>
-      </div>
-    </form>
-
-    <section class="step" aria-live="polite">
-      <div class="step-n">2</div>
-      <div id="result">
-        <h2>Who it affects</h2>
-        <p class="empty">After a change, every confirmed booking it overlaps is listed here. Those bookings stay
-          booked; contact the drivers.</p>
-      </div>
+        <button class="pill wide" type="submit">Apply the change</button>
+      </form>
+      <div class="outcome" id="result" aria-live="polite"></div>
     </section>
-  </section>
+  </div>
 </main>
-
-<p class="foot">Fixture data and a demo staff check. Real staff sign-in comes from Campus IT.</p>
 
 <script src="/static/admin.js"></script>
 </body>

@@ -4,83 +4,96 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CampusPark</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/style.css">
+<script type="importmap">
+{"imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+}}
+</script>
 </head>
 <body>
 
-<header class="top">
-  <span class="where">Cornell campus, Ithaca</span>
-  <nav><a href="#lookup">Find my booking</a><a href="/admin">Staff console</a></nav>
+<div id="world" aria-hidden="true"></div>
+<div class="veil" aria-hidden="true"></div>
+
+<header class="nav">
+  <a class="brand" href="/">CampusPark</a>
+  <nav>
+    <a href="#book">Book</a>
+    <a href="#book" data-lookup>Find my booking</a>
+    <a href="/admin">Staff</a>
+  </nav>
 </header>
 
-<main class="poster">
-  <section class="left">
-    <h1 class="wordmark">campus<br>park<span class="r">.</span></h1>
-    <p class="strap">See which lots your permit allows, how far each one is from where you're going, and hold a
-      place before you drive.</p>
-    <figure class="map" id="map" role="img" aria-label="Schematic map of campus lots and destinations"></figure>
+<main>
+  <section class="hero">
+    <p class="kicker">Cornell campus parking</p>
+    <h1>Your place<br>is waiting.</h1>
+    <p class="sub">CampusPark checks your permit, finds a lot with room for your whole stay, and holds the place before you leave.</p>
+    <div class="ctas">
+      <a class="pill" href="#book">Find parking</a>
+      <a class="link" href="#story">See how it works</a>
+    </div>
+    <div class="scroll-cue" aria-hidden="true"><span></span></div>
   </section>
 
-  <section class="right">
-    <form class="step" id="trip" onsubmit="findParking(event)">
-      <div class="step-n">1</div>
-      <div>
-        <h2>Your trip</h2>
-        <p class="permit" id="permit"></p>
-        <label for="driver">Driver ID</label>
-        <input id="driver" value="student01" autocomplete="off" required>
-        <p class="hint">Try student01, staff01 or visitor01</p>
-        <label for="destination">Going to</label>
-        <select id="destination"></select>
-        <div class="pair">
-          <div>
-            <label for="arrival">Arriving at</label>
-            <input id="arrival" type="time" value="09:00" required>
-          </div>
-          <div>
-            <label for="hours">Hours</label>
-            <input id="hours" type="number" value="2" min="1" max="15" required>
-          </div>
+  <section class="beat" id="story">
+    <div class="beat-text">
+      <h2>Your permit,<br>read in a second.</h2>
+      <p>We ask the campus permit system once, then show only the lots that accept your permit. Nothing you
+        can't use, nothing you have to check twice.</p>
+    </div>
+  </section>
+
+  <section class="beat right">
+    <div class="beat-text">
+      <h2>Every place counted<br>for your whole stay.</h2>
+      <p>A lot is offered only when a place stays free from the minute you arrive to the minute you leave.
+        <span class="count"><b id="count">0</b> places checked</span></p>
+    </div>
+  </section>
+
+  <section class="beat">
+    <div class="beat-text">
+      <h2>Held before you<br>start the engine.</h2>
+      <p>One tap holds the place in our records. Two drivers can't take the same one, and you get the address
+        and the walk before you go.</p>
+    </div>
+  </section>
+
+  <section class="book" id="book">
+    <div class="panel glass">
+      <h2>Where are you headed?</h2>
+      <form id="trip" class="fields">
+        <label><span>Driver ID</span><input id="driver" value="student01" autocomplete="off" required></label>
+        <label><span>Going to</span><select id="destination"></select></label>
+        <div class="row">
+          <label><span>Arriving</span><input id="arrival" type="time" value="09:00" required></label>
+          <label><span>Hours</span><input id="hours" type="number" value="2" min="1" max="15" required></label>
         </div>
-        <button class="go" type="submit">Find parking</button>
-      </div>
-    </form>
-
-    <section class="step" aria-live="polite">
-      <div class="step-n">2</div>
-      <div id="out">
-        <h2>Lots</h2>
-        <p class="empty">Search to see the lots your permit allows, nearest walk first.</p>
-      </div>
-    </section>
-
-    <section class="step" id="lookup">
-      <div class="step-n">3</div>
-      <div>
-        <h2 id="step3-title">Your place</h2>
-        <div id="held"><p class="empty">Hold a lot in step 2, or look up a booking you already have.</p></div>
-        <form class="lookup-form" onsubmit="findBooking(event)">
-          <div>
-            <label for="lookup-id">Confirmation number</label>
-            <input id="lookup-id" placeholder="RES-00001" required>
-          </div>
-          <div>
-            <label for="lookup-driver">Driver ID</label>
-            <input id="lookup-driver" required>
-          </div>
-          <button class="go" type="submit">Show my booking</button>
+        <p class="hint">Demo IDs: student01, staff01, visitor01</p>
+        <button class="pill wide" type="submit">Find parking</button>
+      </form>
+      <div id="out" aria-live="polite"></div>
+      <details class="lookup" id="lookup">
+        <summary>Find my booking</summary>
+        <form id="lookup-form" class="fields">
+          <label><span>Confirmation</span><input id="lookup-id" placeholder="RES-00001" required></label>
+          <label><span>Driver ID</span><input id="lookup-driver" required></label>
+          <button class="pill wide quiet" type="submit">Show</button>
         </form>
-      </div>
-    </section>
+        <div id="lookup-out" aria-live="polite"></div>
+      </details>
+    </div>
   </section>
 </main>
 
-<p class="foot">A pilot on fixture permit and map data; map positions are approximate. Places are held in
-  CampusPark's booking records, and nothing senses an empty space.</p>
+<footer class="foot">A pilot on fixture permit and map data. Lot positions are approximate. Places are held in
+  CampusPark's booking records; nothing senses an empty space.</footer>
 
-<script src="/static/driver.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script type="module" src="/static/main.js"></script>
 </body>
 </html>
