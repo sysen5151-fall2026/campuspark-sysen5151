@@ -1,6 +1,8 @@
 # CampusPark visual design
 
-**Look: Liquid Glass.** Every page sits on a night scene (the generated photographs, blurred, with two slow
+**Look: Liquid Glass.** The home page opens on an autumn afternoon over the campus (a parking terrace, the
+clock tower and the lake), with a soft shade behind the words. Every other page sits on a night scene (the
+generated photographs, blurred, with two slow
 amber and blue light fields and a fine grain). Surfaces use Apple's two glass materials: *regular* glass
 for anything read (a light tint over a backdrop that is blurred and dimmed, so text keeps its contrast
 while colour still shows through) and *thin* glass for small controls. Glass never sits on glass: tiles
@@ -70,7 +72,7 @@ USGS The National Map (public domain), cropped around each lot.
 ## Weight
 
 Each picture is sent at the size it is drawn and in the lightest format the browser reads (AVIF, then
-WebP, then JPEG): the home page's first screen is one 240 KB hero, the tiles load as they near the
+WebP, then JPEG): the home page's first screen is one 195 KB hero, the tiles load as they near the
 screen, blurred backdrops use 360 px copies, and lot photos come from Commons at 330 px in the list,
 960 px in the card and 1280 px on the review page. The aerial is fetched only when a card opens. Text
 responses are gzipped; images are cached for a week. The home page fetches the map library while idle,

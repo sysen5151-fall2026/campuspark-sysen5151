@@ -5,14 +5,16 @@ files; every one has a gradient fallback, so a missing file never breaks a page.
 
 | File | Size | Used on |
 | --- | --- | --- |
-| `hero.jpg` | 3840 x 2160 | home page background |
-| `hero.avif`, `hero.webp` | 2560 x 1440 | the same hero, 240 KB and 316 KB instead of 687 KB; browsers take the first they support |
+| `hero-autumn.avif`, `.webp`, `.jpg` | 1672 x 940 | home page background (supplied by Hangting on 2026-10-28; 195, 246 and 484 KB; browsers take the first they support). The night hero it replaced stays in git history. |
 | `loop.mp4` (optional) | 1920 x 1080, 6 to 8 s | home page; add the file and `data-film="/static/media/loop.mp4"` on the video tag |
 | `permit.jpg`, `count.jpg`, `held.jpg` | 1200 x 1500 | fallback for browsers without AVIF or WebP |
 | `permit-800.avif`/`.webp`, `count-800.*`, `held-800.*` | 800 x 1000 | home page "how it works" tiles (a tile is about 380 px wide, so 800 covers a retina screen) |
 | `permit-bg.jpg`, `count-bg.jpg`, `held-bg.jpg` | 360 x 450 | the blurred backdrops; the blur hides any detail beyond this size |
-Every web copy was encoded from the original files: AVIF at quality 68 (`sips`) and WebP at quality 84
-(`cwebp -m 6 -sharp_yuv`), compared at 1:1 with the JPEG before use. The server lets browsers keep these
+
+Every web copy was encoded from the largest file available: AVIF with `sips` (quality 68 for the tiles, 74
+for the hero, which starts smaller) and WebP with `cwebp -m 6 -sharp_yuv` (84 and 88), compared at 1:1 with
+the JPEG before use. `sips` needs even dimensions for AVIF (an odd height decoded as a flat grey picture),
+so the autumn hero was cropped by one row to 940. The server lets browsers keep these
 files for a week, so a replaced image needs a new file name.
 
 The images above are AI-generated concept images (`generation-prompts.json` records the prompts; its four

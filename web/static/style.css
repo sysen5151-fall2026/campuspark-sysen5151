@@ -165,14 +165,16 @@ body.home { background: var(--night); }
 .hero-media img, .hero-media video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; transform: scale(1.07);
                                      animation: settle 12s cubic-bezier(.2, .6, .2, 1) forwards; }
 .hero-media::after { content: ""; position: absolute; inset: 0;
-                     background: linear-gradient(180deg, rgba(5, 7, 11, .5) 0%, rgba(5, 7, 11, .05) 38%, rgba(5, 7, 11, .2) 62%, rgba(5, 7, 11, .92) 100%); }
+                     /* a soft shade behind the words keeps them legible on the bright afternoon sky; the edges stay bright */
+                     background: radial-gradient(58% 42% at 50% 47%, rgba(6, 9, 14, .5), rgba(6, 9, 14, .18) 62%, rgba(6, 9, 14, 0) 100%),
+                                 linear-gradient(180deg, rgba(5, 7, 11, .42) 0%, rgba(5, 7, 11, .08) 22%, rgba(5, 7, 11, .06) 68%, rgba(5, 7, 11, .9) 100%); }
 @keyframes settle { to { transform: scale(1); } }
 .hero > :not(.hero-media) { position: relative; z-index: 1; }
 .hero h1 { margin: 0; font-size: clamp(54px, 8.4vw, 112px); line-height: 1; font-weight: 700; letter-spacing: -0.05em;
-           background: linear-gradient(180deg, #fff 35%, rgba(255, 255, 255, .62)); -webkit-background-clip: text; background-clip: text; color: transparent;
-           filter: drop-shadow(0 6px 30px rgba(0, 0, 0, .45)); animation: rise 1.1s cubic-bezier(.2, .7, .2, 1) .1s backwards; }
+           background: linear-gradient(180deg, #fff 40%, rgba(255, 255, 255, .8)); -webkit-background-clip: text; background-clip: text; color: transparent;
+           filter: drop-shadow(0 2px 6px rgba(0, 0, 0, .35)) drop-shadow(0 8px 40px rgba(0, 0, 0, .45)); animation: rise 1.1s cubic-bezier(.2, .7, .2, 1) .1s backwards; }
 .hero .lede { max-width: 600px; margin: 20px auto 0; color: var(--ink-2); font-size: clamp(19px, 1.6vw, 22px); line-height: 1.4;
-              text-shadow: 0 2px 18px rgba(0, 0, 0, .6); animation: rise 1.1s cubic-bezier(.2, .7, .2, 1) .22s backwards; }
+              text-shadow: 0 1px 3px rgba(0, 0, 0, .55), 0 2px 22px rgba(0, 0, 0, .6); animation: rise 1.1s cubic-bezier(.2, .7, .2, 1) .22s backwards; }
 @keyframes rise { from { opacity: 0; transform: translateY(22px); filter: blur(6px); } }
 
 .search { margin-top: 44px; width: min(1000px, 100%); display: grid; grid-template-columns: 1.1fr 1.5fr 1fr .95fr auto; align-items: stretch;
@@ -195,7 +197,9 @@ input[type=time]::-webkit-calendar-picker-indicator { filter: invert(var(--icon-
 .stepper output { min-width: 3.5em; font-size: 15px; font-weight: 500; color: var(--ink-2); }
 .search .go { align-self: center; margin-left: 6px; height: 54px; width: 54px; padding: 0; border-radius: 50%; }
 .search .go svg { width: 20px; height: 20px; stroke-width: 2.6; }
-.home-hint { margin-top: 16px; font-size: 13px; color: var(--ink-3); text-shadow: 0 1px 8px rgba(0, 0, 0, .6); animation: rise 1s .5s backwards; }
+.home-hint { margin-top: 16px; padding: 5px 14px; border-radius: 999px; font-size: 13px; font-weight: 500; color: var(--ink-2); animation: rise 1s .5s backwards;
+             background: var(--lg-lens), var(--lg-tint-thin); -webkit-backdrop-filter: var(--lg-filter-thin); backdrop-filter: var(--lg-filter-thin);
+             box-shadow: var(--lg-inner), 0 8px 24px rgba(0, 0, 0, .22); text-shadow: var(--lift); }
 
 .how { position: relative; padding: 110px 24px 120px; max-width: 1180px; margin: 0 auto;
         content-visibility: auto; contain-intrinsic-size: auto 900px; }
@@ -481,6 +485,7 @@ svg { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; s
   .search { grid-template-columns: 1fr 1fr; border-radius: 30px; gap: 4px; }
   .seg + .seg::before { display: none; }
   .search .go { grid-column: 1 / -1; width: 100%; border-radius: 999px; margin: 6px 0 0; }
+  .hero-media img { object-position: 68% 50%; }   /* keep the clock tower in a narrow crop */
   .tiles { grid-template-columns: 1fr; }
   body.find { height: auto; overflow: auto; }
   .split { display: flex; flex-direction: column; }

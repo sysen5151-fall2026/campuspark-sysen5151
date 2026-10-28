@@ -57,9 +57,9 @@ def test_every_page_is_served(path):
 def test_text_is_compressed_and_images_are_cached():
     css = client.get("/static/style.css", headers={"Accept-Encoding": "gzip"})
     assert css.headers["content-encoding"] == "gzip" and css.headers["cache-control"] == "no-cache"
-    hero = client.get("/static/media/hero.avif", headers={"Accept-Encoding": "gzip"})
-    assert hero.status_code == 200 and "content-encoding" not in hero.headers
-    assert hero.headers["cache-control"] == "public, max-age=604800"
+    image = client.get("/static/media/permit-800.avif", headers={"Accept-Encoding": "gzip"})
+    assert image.status_code == 200 and "content-encoding" not in image.headers
+    assert image.headers["cache-control"] == "public, max-age=604800"
 
 
 def test_student_gets_only_student_lots_nearest_first():

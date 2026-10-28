@@ -625,3 +625,10 @@ no hidden aerial layer, gzip for text, a week's cache for images, idle prefetch 
 preconnects, and a map loop that sends data only on change with the pulse and travelling light on
 feature state. The hidden video was also found to take the hero's place in the layout; it is now hidden
 properly and the film is opt-in. The home page's first screen is now about 245 KB.
+
+**Follow-up, same day: a new home picture.** Hangting supplied an autumn afternoon view (a parking terrace
+looking over the trees to the clock tower and the lake) for the home page. It was encoded to AVIF, WebP and
+JPEG under a new name, `hero-autumn`, so week-long caches cannot keep the old picture; the first AVIF came
+out flat grey because of the image's odd height, so it was cropped by one row. The brighter sky needed a
+soft radial shade behind the headline and a firmer text shadow, the demo-ID hint now sits on a thin glass
+pill over the stone wall, and on phones the crop moves toward the clock tower.
