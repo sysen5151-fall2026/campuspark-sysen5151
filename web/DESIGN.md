@@ -42,7 +42,10 @@ image slot has a gradient fallback, so the pages work before the images arrive.
 
 ## Map
 
-MapLibre GL with OpenFreeMap's Positron style (no key). Lots the permit allows are white pills showing
+MapLibre GL with OpenFreeMap's Positron style (no key), tilted to 3D by default. The buildings are the
+real ones: OpenStreetMap footprints and heights from the tiles, raised with a fill-extrusion layer. No
+building is modelled or invented; where OSM has no height, a low default is used. A 2D/3D switch sits
+under the zoom buttons. Lots the permit allows are white pills showing
 the walk in minutes; the open lot turns black; lots outside the permit are small grey dots; the
 destination is a blue dot. The walk is a dashed blue line. Positions are approximate and the map says so.
 

@@ -560,3 +560,7 @@ in session storage rather than URLs, and lists bookings made on the device. New 
 
 **Checked:** every suite as before, skeleton now 48 passed. Searched, opened a lot, reviewed,
 confirmed and opened the booking again by hand; staff page and phone width checked.
+
+**Follow-up, same day:** 3D only where it is real. The results map now tilts by default and raises
+Cornell's actual buildings from the OpenStreetMap footprints and heights already in the map tiles (a
+MapLibre fill-extrusion layer), with a 2D/3D switch. Nothing is modelled by hand.

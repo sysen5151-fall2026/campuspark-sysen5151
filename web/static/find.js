@@ -21,10 +21,23 @@ function initMap() {
   map = new maplibregl.Map({
     container: "map",
     style: "https://tiles.openfreemap.org/styles/positron",
-    center: [-76.476, 42.449], zoom: 14.6, attributionControl: {compact: true},
+    center: [-76.476, 42.449], zoom: 14.6, pitch: 52, bearing: -18, attributionControl: {compact: true},
   });
-  map.addControl(new maplibregl.NavigationControl({showCompass: false}), "top-right");
+  map.addControl(new maplibregl.NavigationControl({visualizePitch: true}), "top-right");
+  map.addControl(new DimensionToggle(), "top-right");
   return new Promise(res => map.on("load", () => {
+    // Real buildings: OpenStreetMap footprints and heights from the map tiles, raised in 3D.
+    const firstLabel = map.getStyle().layers.find(l => l.type === "symbol")?.id;
+    map.addLayer({
+      id: "buildings-3d", type: "fill-extrusion", source: "openmaptiles", "source-layer": "building", minzoom: 14,
+      paint: {
+        "fill-extrusion-color": ["interpolate", ["linear"], ["coalesce", ["get", "render_height"], 6], 0, "#e6e6ea", 40, "#d4d5dc"],
+        "fill-extrusion-height": ["coalesce", ["get", "render_height"], 6],
+        "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
+        "fill-extrusion-opacity": 0.92,
+        "fill-extrusion-vertical-gradient": true,
+      },
+    }, firstLabel);
     map.addSource("walk", {type: "geojson", data: {type: "FeatureCollection", features: []}});
     map.addLayer({id: "walk-halo", type: "line", source: "walk", paint: {"line-color": "#ffffff", "line-width": 8, "line-opacity": 0.9}});
     map.addLayer({id: "walk", type: "line", source: "walk", layout: {"line-cap": "round"},
@@ -47,7 +60,29 @@ function fit(ids) {
   if (!pts.length || !map) return;
   const b = new maplibregl.LngLatBounds();
   pts.forEach(p => b.extend([p.lon, p.lat]));
-  map.fitBounds(b, {padding: {top: 80, bottom: 80, left: 80, right: 80}, maxZoom: 16, duration: 900});
+  const cam = map.cameraForBounds(b, {padding: {top: 90, bottom: 90, left: 90, right: 90}, maxZoom: 16});
+  if (cam) map.easeTo({...cam, pitch: map.getPitch(), bearing: map.getBearing(), duration: 900});
+}
+
+// A small 2D / 3D switch next to the zoom buttons.
+class DimensionToggle {
+  onAdd(m) {
+    this.el = document.createElement("div");
+    this.el.className = "maplibregl-ctrl maplibregl-ctrl-group";
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "dim-toggle";
+    const label = () => { b.textContent = m.getPitch() > 5 ? "2D" : "3D"; b.title = `Switch to ${b.textContent} view`; };
+    b.addEventListener("click", () => {
+      const flat = m.getPitch() > 5;
+      m.easeTo({pitch: flat ? 0 : 52, bearing: flat ? 0 : -18, duration: 800});
+    });
+    m.on("pitchend", label);
+    label();
+    this.el.appendChild(b);
+    return this.el;
+  }
+  onRemove() { this.el.remove(); }
 }
 
 function placeMarkers() {
@@ -128,7 +163,7 @@ function openDetail(lotId) {
   hot(lotId);
   select(lotId);
   const l = geo.lots[lotId];
-  if (l && map) map.easeTo({center: [l.lon, l.lat], zoom: Math.max(map.getZoom(), 15.4), duration: 700});
+  if (l && map) map.easeTo({center: [l.lon, l.lat], zoom: Math.max(map.getZoom(), 16), duration: 800});
   $("detail").innerHTML = `
     <button class="back" id="back" type="button">‹ All lots</button>
     <div class="cover" style="background-image:url('${lotImage(lotId)}'), linear-gradient(135deg,#dfe3ea,#c8ced8)"></div>
