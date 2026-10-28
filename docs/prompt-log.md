@@ -668,3 +668,11 @@ and opens with a burst after booking; live status chips on My bookings (new book
 count-ups on the staff page; an app icon, manifest, share image and a 404 page (the API keeps its JSON
 404, with a test for both). Tested in the browser end to end, including a booking made by sliding; the
 test booking was cleared afterwards with the server stopped.
+
+**2026-10-28: two display bugs found while taking screenshots for the October 30 discussion slides.**
+Headless screenshots of each page showed the lot photo on the results card collapsed to a thin strip.
+The slide-to-confirm control added the day before used the class `.slide`, which the results card's photo
+carousel already used, so the carousel picked up the control's 64px height. The control is now `.swipe`.
+The phone screenshot of the pass also broke the confirmation number after `RES-`; it now stays on one line
+and scales down on narrow screens. Booking by sliding was checked again after the rename, and the test
+bookings were cleared with the server stopped.

@@ -567,7 +567,7 @@ svg { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; s
 .pass-cut { position: relative; height: 26px; margin: 10px 0; }
 .pass-cut::before { content: ""; position: absolute; left: 24px; right: 24px; top: 50%; border-top: 2px dashed rgba(255, 255, 255, .22); }
 .pass-bottom { display: grid; grid-template-columns: 1fr auto; gap: 18px; align-items: center; padding: 6px 24px 26px; }
-.pass-bottom .code { font-size: 32px; font-weight: 700; letter-spacing: .02em; font-variant-numeric: tabular-nums; }
+.pass-bottom .code { font-size: clamp(22px, 7vw, 32px); font-weight: 700; letter-spacing: .02em; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .qr { width: 112px; height: 112px; padding: 10px; border-radius: 16px; background: #fff; box-shadow: 0 0 30px rgba(255, 255, 255, .15); }
 .qr img, .qr canvas { width: 92px !important; height: 92px !important; }
 .guide { margin: 20px 6px 0; font-size: 15px; color: var(--ink-2); text-shadow: var(--lift); }
@@ -706,28 +706,28 @@ kbd { display: inline-block; font: 600 11px var(--sys); letter-spacing: 0; paddi
 @media (max-width: 900px) { .kbar span, .kbar kbd { display: none; } .kbar { padding: 0 9px; margin-right: 0; } .palette-foot { display: none; } }
 
 /* ================================================================ REVIEW: slide to hold */
-.slide { position: relative; display: block; width: 100%; height: 64px; padding: 0; border: 0; border-radius: 999px; cursor: grab; overflow: hidden;
+.swipe { position: relative; display: block; width: 100%; height: 64px; padding: 0; border: 0; border-radius: 999px; cursor: grab; overflow: hidden;
          user-select: none; -webkit-user-select: none; touch-action: none; color: #fff; --x: 0px; --k: 0;
          background: var(--lg-lens), rgba(255, 255, 255, .08); -webkit-backdrop-filter: var(--lg-filter); backdrop-filter: var(--lg-filter);
          box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .16), inset 0 2px 10px rgba(0, 0, 0, .3), 0 20px 50px rgba(0, 0, 0, .3); }
-.slide:active { cursor: grabbing; }
-.slide-fill { position: absolute; inset: 0 auto 0 0; width: calc(var(--x) + 64px); border-radius: inherit;
+.swipe:active { cursor: grabbing; }
+.swipe-fill { position: absolute; inset: 0 auto 0 0; width: calc(var(--x) + 64px); border-radius: inherit;
               background: linear-gradient(90deg, rgba(255, 181, 71, .08), rgba(255, 181, 71, .5)); box-shadow: 0 0 30px rgba(255, 181, 71, calc(var(--k) * .6)); }
-.slide-text { position: absolute; inset: 0; display: grid; place-items: center; padding-left: 52px; font-size: 17px; font-weight: 600; letter-spacing: -0.01em;
+.swipe-text { position: absolute; inset: 0; display: grid; place-items: center; padding-left: 52px; font-size: 17px; font-weight: 600; letter-spacing: -0.01em;
               color: transparent; -webkit-background-clip: text; background-clip: text; opacity: calc(1 - var(--k) * 1.5);
               background-image: linear-gradient(100deg, rgba(255, 255, 255, .42) 40%, #fff 50%, rgba(255, 255, 255, .42) 60%); background-size: 260% 100%;
-              animation: slide-shine 2.8s linear infinite; }
-@keyframes slide-shine { from { background-position: 140% 0; } to { background-position: -40% 0; } }
-.slide.busy .slide-text, .slide.done .slide-text { opacity: 1; padding-left: 0; padding-right: 52px; animation: none; color: #fff; background: none; }
-.slide-knob { position: absolute; left: 6px; top: 6px; width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; color: #0b0d12;
+              animation: swipe-shine 2.8s linear infinite; }
+@keyframes swipe-shine { from { background-position: 140% 0; } to { background-position: -40% 0; } }
+.swipe.busy .swipe-text, .swipe.done .swipe-text { opacity: 1; padding-left: 0; padding-right: 52px; animation: none; color: #fff; background: none; }
+.swipe-knob { position: absolute; left: 6px; top: 6px; width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; color: #0b0d12;
               background: linear-gradient(180deg, #fff, #e6e7ec); box-shadow: 0 6px 18px rgba(0, 0, 0, .35), inset 0 1px 0 #fff; translate: var(--x) 0; }
-.slide-knob svg { width: 22px; height: 22px; stroke-width: 2.6; }
-.slide.springing .slide-knob { transition: translate .5s cubic-bezier(.3, 1.35, .5, 1), background .3s, color .3s; }
-.slide.springing .slide-fill { transition: width .5s cubic-bezier(.3, 1.35, .5, 1), background .3s; }
-.slide.busy .slide-knob svg { animation: spin .8s linear infinite; }
-.slide.done .slide-fill { background: linear-gradient(90deg, rgba(52, 199, 89, .25), rgba(52, 199, 89, .7)); box-shadow: 0 0 40px rgba(52, 199, 89, .5); }
-.slide.done .slide-knob { color: #fff; background: var(--green); }
-.slide.nudge .slide-knob { animation: nudge .7s cubic-bezier(.3, 1.4, .5, 1); }
+.swipe-knob svg { width: 22px; height: 22px; stroke-width: 2.6; }
+.swipe.springing .swipe-knob { transition: translate .5s cubic-bezier(.3, 1.35, .5, 1), background .3s, color .3s; }
+.swipe.springing .swipe-fill { transition: width .5s cubic-bezier(.3, 1.35, .5, 1), background .3s; }
+.swipe.busy .swipe-knob svg { animation: spin .8s linear infinite; }
+.swipe.done .swipe-fill { background: linear-gradient(90deg, rgba(52, 199, 89, .25), rgba(52, 199, 89, .7)); box-shadow: 0 0 40px rgba(52, 199, 89, .5); }
+.swipe.done .swipe-knob { color: #fff; background: var(--green); }
+.swipe.nudge .swipe-knob { animation: nudge .7s cubic-bezier(.3, 1.4, .5, 1); }
 @keyframes nudge { 30% { translate: 34px 0; } 100% { translate: 0 0; } }
 
 /* ================================================================ BOOKING: a pass you can hold */

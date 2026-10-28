@@ -32,10 +32,10 @@
     your booking stays and they will contact you. Cancelling is not available in this pilot.</p>
   <!-- slide to confirm: holding a place is the one step that commits, so it asks for a deliberate gesture.
        It is still a button: Enter or Space confirms from the keyboard. -->
-  <button class="slide" id="confirm" type="button" aria-label="Confirm and hold this place">
-    <span class="slide-fill"></span>
-    <span class="slide-text" id="slide-text">Slide to hold your place</span>
-    <span class="slide-knob"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+  <button class="swipe" id="confirm" type="button" aria-label="Confirm and hold this place">
+    <span class="swipe-fill"></span>
+    <span class="swipe-text" id="swipe-text">Slide to hold your place</span>
+    <span class="swipe-knob"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
   </button>
   <div id="error" aria-live="assertive"></div>
   <p style="text-align:center;margin-top:16px"><a id="change" href="/find">Change lot</a></p>
@@ -60,7 +60,7 @@ if (!p) {
       <div><dt>Permit</dt><dd><span style="text-transform:capitalize">${esc(p.permit)}</span>, checked for this lot</dd></div>
       <div><dt>Driver</dt><dd>${esc(p.trip.driver_id)}</dd></div>
     </dl>`;
-  const slide = $("confirm"), knob = slide.querySelector(".slide-knob");
+  const slide = $("confirm"), knob = slide.querySelector(".swipe-knob");
   const ARROW = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
   const SPIN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9"/></svg>';
   const TICK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
@@ -74,7 +74,7 @@ if (!p) {
     slide.classList.add("springing", "busy");
     setX(travel());
     knob.innerHTML = SPIN;
-    $("slide-text").textContent = "Holding your place…";
+    $("swipe-text").textContent = "Holding your place…";
     $("error").innerHTML = "";
     const res = await api("/api/reserve", {...p.trip, lot_id: p.lot.lot_id, search_id: p.search_id, request_id: p.request_id});
     if (res.error) {
@@ -82,13 +82,13 @@ if (!p) {
       slide.classList.remove("busy");
       setX(0);
       knob.innerHTML = ARROW;
-      $("slide-text").textContent = "Slide to try again";
+      $("swipe-text").textContent = "Slide to try again";
       $("error").innerHTML = `<p class="err">${esc(res.error)} <a href="${back}">Choose another lot</a></p>`;
       return;
     }
     slide.classList.replace("busy", "done");
     knob.innerHTML = TICK;
-    $("slide-text").textContent = "Held";
+    $("swipe-text").textContent = "Held";
     navigator.vibrate?.(18);
     recent.add({id: res.confirmation, lot: res.lot, start: res.start, end: res.end, driver: p.trip.driver_id, day: new Date().toDateString()});
     session.put("cp.justBooked", res.confirmation);
