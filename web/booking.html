@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your booking · CampusPark</title>
+<link rel="stylesheet" href="/static/style.css">
+<meta name="description" content="Hold a campus parking place your permit allows, before you leave.">
+<meta name="theme-color" content="#05070b">
+<link rel="icon" href="/static/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/static/icon-180.png">
+<link rel="manifest" href="/static/manifest.json">
+<meta property="og:title" content="CampusPark">
+<meta property="og:description" content="Lots your permit allows, with room for your whole stay. Held before you leave.">
+<meta property="og:image" content="/static/media/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<script type="module" src="/static/fx.js"></script>
+</head>
+<body class="glass-page">
+<div class="backdrop" style="--img:url('/static/media/held-bg.jpg')" aria-hidden="true"><i></i><i></i></div>
+<header class="bar">
+  <a class="mark" href="/"><i>P</i>CampusPark</a>
+  <nav><a href="/bookings" class="on">My bookings</a><a href="/admin">Staff</a></nav>
+</header>
+<main class="narrow" id="main"><div class="skeleton" style="height:420px;margin:40px 0"></div></main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script type="module" src="/static/booking.js"></script>
+</body>
+</html>

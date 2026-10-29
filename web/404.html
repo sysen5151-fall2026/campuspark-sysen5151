@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nothing here · CampusPark</title>
+<link rel="stylesheet" href="/static/style.css">
+<meta name="description" content="Hold a campus parking place your permit allows, before you leave.">
+<meta name="theme-color" content="#05070b">
+<link rel="icon" href="/static/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/static/icon-180.png">
+<link rel="manifest" href="/static/manifest.json">
+<meta property="og:title" content="CampusPark">
+<meta property="og:description" content="Lots your permit allows, with room for your whole stay. Held before you leave.">
+<meta property="og:image" content="/static/media/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<script type="module" src="/static/fx.js"></script>
+</head>
+<body class="glass-page">
+<div class="backdrop" style="--img:url('/static/media/held-bg.jpg')" aria-hidden="true"><i></i><i></i></div>
+<header class="bar">
+  <a class="mark" href="/"><i>P</i>CampusPark</a>
+  <nav><a href="/bookings">My bookings</a><a href="/admin">Staff</a></nav>
+</header>
+<main class="lost">
+  <!-- an empty parking bay drawing itself, with the number painted on the ground -->
+  <svg class="bay" viewBox="0 0 420 240" aria-hidden="true">
+    <path class="bay-line" d="M60 40 L20 220 M360 40 L400 220" pathLength="100"/>
+    <path class="bay-edge" d="M64 40 H356 L396 220 H24 Z" pathLength="100"/>
+    <text x="210" y="168" class="bay-num">404</text>
+  </svg>
+  <h1>This space is empty.</h1>
+  <p class="lede">The page you were looking for was never here, or it has moved on. Your parking is easier to find.</p>
+  <div class="lost-actions">
+    <a class="btn" href="/">Find parking</a>
+    <a class="btn ghost" href="/bookings">My bookings</a>
+  </div>
+  <p class="fine">Press <kbd>⌘</kbd> <kbd>K</kbd> to go anywhere.</p>
+</main>
+</body>
+</html>

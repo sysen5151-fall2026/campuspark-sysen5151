@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My bookings · CampusPark</title>
+<link rel="stylesheet" href="/static/style.css">
+<meta name="description" content="Hold a campus parking place your permit allows, before you leave.">
+<meta name="theme-color" content="#05070b">
+<link rel="icon" href="/static/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/static/icon-180.png">
+<link rel="manifest" href="/static/manifest.json">
+<meta property="og:title" content="CampusPark">
+<meta property="og:description" content="Lots your permit allows, with room for your whole stay. Held before you leave.">
+<meta property="og:image" content="/static/media/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<script type="module" src="/static/fx.js"></script>
+</head>
+<body class="glass-page">
+<div class="backdrop" style="--img:url('/static/media/permit-bg.jpg')" aria-hidden="true"><i></i><i></i></div>
+<header class="bar">
+  <a class="mark" href="/"><i>P</i>CampusPark</a>
+  <nav><a href="/bookings" class="on">My bookings</a><a href="/admin">Staff</a></nav>
+</header>
+<main class="narrow">
+  <h1>My bookings.</h1>
+  <p class="lede">Open a booking with its confirmation number and the driver ID it was made with.</p>
+  <form class="card" id="find">
+    <label class="field"><span>Confirmation number</span><input id="code" placeholder="RES-00001" required autocomplete="off"></label>
+    <label class="field"><span>Driver ID</span><input id="driver" required autocomplete="off"></label>
+    <button class="btn full" type="submit">Open booking</button>
+  </form>
+  <h2 class="section-title" id="recent-title" hidden>On this device</h2>
+  <ul class="recent" id="recent"></ul>
+</main>
+<script type="module">
+import { esc, session, recent } from "/static/common.js";
+const $ = id => document.getElementById(id);
+$("driver").value = session.driver;
+$("find").addEventListener("submit", e => {
+  e.preventDefault();
+  session.driver = $("driver").value.trim();
+  location.href = `/booking/${encodeURIComponent($("code").value.trim().toUpperCase())}`;
+});
+const list = recent.all();
+// a booking made today shows where it stands now; older ones show their day
+function status(b) {
+  if (b.day !== new Date().toDateString()) return b.day ? `<em class="chip">${esc(b.day.slice(4, 10))}</em>` : "";
+  const at = t => { const [h, m] = t.split(":").map(Number); const d = new Date(); d.setHours(h, m, 0, 0); return d; };
+  const now = new Date(), start = at(b.start), end = at(b.end), mins = ms => Math.ceil(ms / 60000);
+  const span = m => (m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`);
+  if (now < start) return `<em class="chip soon">In ${span(mins(start - now))}</em>`;
+  if (now < end) return `<em class="chip now">Now · ${span(mins(end - now))} left</em>`;
+  return `<em class="chip over">Ended</em>`;
+}
+function show() {
+  $("recent").innerHTML = list.map(b => `<li><a href="/booking/${encodeURIComponent(b.id)}">
+    <span><b>${esc(b.lot)}</b><br><small>${esc(b.start)} to ${esc(b.end)} · ${esc(b.id)}</small></span>${status(b)}</a></li>`).join("");
+}
+if (list.length) {
+  $("recent-title").hidden = false;
+  show();
+  setInterval(show, 30000);
+}
+</script>
+</body>
+</html>

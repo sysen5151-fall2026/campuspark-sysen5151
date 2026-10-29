@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CampusPark Staff</title>
+<link rel="stylesheet" href="/static/style.css">
+<meta name="description" content="Hold a campus parking place your permit allows, before you leave.">
+<meta name="theme-color" content="#05070b">
+<link rel="icon" href="/static/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/static/icon-180.png">
+<link rel="manifest" href="/static/manifest.json">
+<meta property="og:title" content="CampusPark">
+<meta property="og:description" content="Lots your permit allows, with room for your whole stay. Held before you leave.">
+<meta property="og:image" content="/static/media/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<script type="module" src="/static/fx.js"></script>
+</head>
+<body class="glass-page">
+
+<div class="backdrop" style="--img:url('/static/media/count-bg.jpg')" aria-hidden="true"><i></i><i></i></div>
+<header class="bar">
+  <a class="mark" href="/"><i>P</i>CampusPark</a>
+  <nav><a href="/">Driver view</a><a href="/admin" class="on">Staff</a></nav>
+</header>
+
+<main class="staff-wrap">
+  <h1>Parking controls.</h1>
+  <p class="lede">What every search and booking is checked against right now. <span class="version" id="version"></span></p>
+
+  <div class="staff-grid">
+    <section class="card">
+      <h2>In force</h2>
+      <table class="pools">
+        <thead><tr><th>Pool</th><th>Permits</th><th>Places</th><th>Closed today</th></tr></thead>
+        <tbody id="pools"></tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h2>Change a pool</h2>
+      <form id="change">
+        <label class="field"><span>Staff account (demo: admin01)</span><input id="account" value="admin01" autocomplete="off" required></label>
+        <label class="field"><span>Pool</span><select id="pool"></select></label>
+        <label class="field"><span>New number of places</span><input id="capacity" type="number" min="0" placeholder="Keep as is"></label>
+        <div class="two">
+          <label class="field"><span>Closed from</span><input id="close-start" type="time"></label>
+          <label class="field"><span>Until</span><input id="close-end" type="time"></label>
+        </div>
+        <label class="tick"><input id="clear" type="checkbox"> Reopen it first (remove today's closures)</label>
+        <button class="btn full" type="submit">Apply the change</button>
+      </form>
+      <div class="outcome" id="result" aria-live="polite"></div>
+    </section>
+  </div>
+</main>
+
+<script src="/static/admin.js"></script>
+</body>
+</html>

@@ -431,3 +431,248 @@ corrected one. Both C.5.3 test files now run in CI.
 
 **Assistant assumptions:** see the generating session's 22 assumptions as summarized in the
 deviation log; none was accepted silently.
+
+---
+
+### 2026-10-28 · Hangting Zhu · Claude (Opus 5.5) · Chapter 8 wiring: the web app runs the model's functions
+
+**Asked for:** the next step recorded in `docs/deployment.md`: move the routes off the Chapter 2
+helpers onto `functions/` and the SQLite store, give UC.2 its entry points, and make the two pages
+usable enough to demonstrate.
+
+**Built from:** the first-level IDEF0 (the order of F.1 to F.7 in each use case), the route table,
+the contract shapes, and UC.1.10 and UC.2 in the model.
+
+**Produced:**
+
+- `api/service.py`: runs UC.1 search (F.2, permit system, F.3, map service, F.3, F.4), UC.1 booking
+  (F.2, permit system, F.5, F.6) and UC.2 changes (F.1, F.7), holding the rules store and the SQLite
+  reservation store. IO.16 from each search is kept until the booking so F.6 never looks the route up
+  twice (1.4.1.10).
+- `api/main.py`: the routes now only translate between the page and the functions. New entry points
+  for UC.1.10 (find a confirmation again, for its own driver only) and UC.2 (staff console, current
+  controls, apply a change).
+- `integrations/`: the permit stub answers IO.2 with IO.3; the map stub answers IO.4 with IO.5,
+  including fixture lot addresses.
+- `web/index.html`, `web/admin.html`, `web/static/style.css`: redesigned driver page with option cards,
+  "Why this option" facts, confirmation details and booking lookup; new staff console.
+- Removed `api/eligibility.py`, `api/ranking.py` and `api/reservations.py`, which duplicated rules
+  now in `functions/`.
+
+**Tests changed, and why:** `tests/test_skeleton.py` reset the old in-memory list and called the
+removed helpers directly. Its reset fixture now resets `api/service.py`, and the capacity tests book
+through `/api/reserve` so F.5 and the database make every decision. The behaviors checked are the same
+as before; one label check changed because a stay can no longer run past midnight (F.2). Nine new
+tests cover the new behavior: stays past midnight, finding a confirmation, a repeated request ID,
+route guidance reaching the confirmation, the warning when it cannot, a closure listing affected
+bookings, a capacity change applying to the next search, an unapproved staff account, and records
+surviving a restart.
+
+**Decisions the team should know about:** bookings are serialized with one lock in
+`api/service.py` until C.5.3 takes over the commitment; staff changes live in memory until the rules
+store is persisted; the staff check is the fixture account `admin01`, not a sign-in.
+
+**Checked:** skeleton 42 passed, functional requirements 11, contract conformance 11, data access 5,
+C.5.3 42, coverage 1; the 20 Chapter 3 placeholders still fail. The full UC.1 and UC.2 flows were run
+by hand in the browser: search, facts, booking, confirmation, and a closure that listed the booking it
+affected.
+
+---
+
+### 2026-10-28 · Hangting Zhu · Claude (Opus 5.5) · Visual redesign and campus map
+
+**Asked for:** a distinctive interface instead of a generic app look, and a map that fits it.
+
+**Built from:** the guidance of Anthropic's `frontend-design` skill (subject first, a written token
+plan, a layout sketch, then a review against generic defaults), applied to the subject: drivers who
+read parking signage every day.
+
+**Produced:** `web/DESIGN.md` (tokens, type, layout, rules), a rewritten `web/static/style.css`,
+`web/static/driver.js` and `web/static/admin.js`, new markup for both pages, approximate map positions
+in the map fixture and a display-only `GET /api/map` route. Look: sign-blue P signs with inset
+borders, the trip form as a permit hang-tag whose color follows the permit returned, one stall per
+place in each pool with held stalls filled, a curb-yellow walking line, Overpass type, and
+OpenStreetMap tiles filtered to asphalt (Leaflet 1.9.4 from cdnjs).
+
+**Checked:** skeleton 43 passed (one new test that every lot and destination has a map position);
+other suites unchanged. Searched, hovered, booked and applied a closure by hand at desktop width, and
+checked the driver page at phone width.
+
+**Limits:** map positions are hand-placed and labelled approximate; the page needs network access for
+the map tiles and the font.
+
+---
+
+### 2026-10-28 · Hangting Zhu · Claude (Opus 5.5) · Second redesign: Swiss poster and schematic map
+
+**Asked for:** an interface with real artistic character. The parking-signage version was coherent but
+read as municipal signage, and its dark tiled map was murky. Hangting chose the Swiss International
+Style direction from four options.
+
+**Produced:** a new `web/DESIGN.md` (signal red, black, white and two greys; Archivo; a twelve-column
+grid; rules for red and motion), rewritten `style.css`, `driver.js`, `admin.js` and both pages. The
+Leaflet map and its tiles are gone. The map is now an SVG transit-style diagram: nodes start from their
+approximate positions, are pushed apart where they crowd and snapped to a 40px grid, and walks are drawn
+as a 45-degree segment then a straight one with the walking minutes beside it. The page states that the
+diagram is not to scale.
+
+**Checked:** all suites unchanged (skeleton 43 passed). Search, pointing at a lot, holding a place,
+looking a booking up and applying a closure were run by hand at desktop and phone widths.
+
+---
+
+### 2026-10-28 · Hangting Zhu · Claude (Opus 5.5) · Third redesign: cinematic 3D product page
+
+**Asked for:** a premium, Apple-like page with high-quality animation and visuals that sets the project
+apart, without clutter. The flat Swiss version was not what Hangting meant.
+
+**Produced:** `web/static/scene.js` (a Three.js world generated entirely in code: a lit lot at dusk
+with cars, lamps, trees, wet asphalt, a sky dome, lit buildings and bloom; the same world as a campus
+map with amber availability beams, destination beams and an animated walking trail),
+`web/static/main.js` (scroll story with GSAP ScrollTrigger: hero, three beats, rise to campus; booking
+on the map from a glass panel), a new `style.css` and `index.html`, a light staff console, and a new
+`web/DESIGN.md`. `driver.js` from the Swiss version is removed. No backend change.
+
+**Assets:** none downloaded. Three.js 0.160.0 and GSAP 3.12.5 load from jsDelivr and cdnjs at run time.
+
+**Checked:** all suites unchanged (skeleton 43 passed; 20 Chapter 3 placeholders still fail). The
+scroll story, a search, pointing at a lot, holding a place and a staff closure were run by hand at
+desktop width; the hero was checked at phone width.
+
+---
+
+### 2026-10-28 · Hangting Zhu · Claude (Opus 5.5) · Fourth redesign: a multi-page booking flow
+
+**Asked for:** stop putting everything on one scrolling page; embed the search in the home page;
+give booking a real sense of confirmation; follow how well-made booking products structure the flow.
+The procedural 3D world was judged too crude and is removed.
+
+**Produced:** separate pages served by new routes in `api/main.py`: home with the embedded search,
+`/find` (results list, MapLibre map with OpenFreeMap tiles, lot details sliding over the list),
+`/review` (summary before anything is held), `/booking/{id}` (success check and a Wallet-style pass
+with QR code, directions and a calendar file) and `/bookings`. Shared `common.js` keeps the driver ID
+in session storage rather than URLs, and lists bookings made on the device. New `style.css` and
+`web/DESIGN.md`; image slots with fallbacks for photographs Hangting is generating separately
+(`web/static/media/README.md`). Staff console restyled to match. No change to any function.
+
+**Tests changed:** `tests/test_skeleton.py` gains a check that every page is served with
+`Cache-Control: no-cache`.
+
+**Checked:** every suite as before, skeleton now 48 passed. Searched, opened a lot, reviewed,
+confirmed and opened the booking again by hand; staff page and phone width checked.
+
+**Follow-up, same day:** 3D only where it is real. The results map now tilts by default and raises
+Cornell's actual buildings from the OpenStreetMap footprints and heights already in the map tiles (a
+MapLibre fill-extrusion layer), with a 2D/3D switch. Nothing is modelled by hand.
+
+**Follow-up, same day:** real places and a game-map feel. Lot and destination pins moved to real
+OpenStreetMap positions (Hoy Road Garage and the destinations by name; the other fixture lots onto the
+nearest real parking area). Lot pictures are live aerial crops from USGS The National Map, which is
+public domain; Google Maps imagery was not used because its terms do not allow reuse. The results map
+now defaults to a night style with amber availability beams (fill-extrusion, height by share free),
+pulsing glows, an arched walking trail with moving dashes and a travelling light, a camera fly-in and a
+slow orbit around an opened lot, plus a day/night switch.
+
+**Follow-up, same day: generated images added.** Hangting generated the hero, the three "how it works"
+tiles and four lot photos with GPT image generation from the prompt in this log's conversation; the
+generator's notes are kept in `web/static/media/generation-prompts.json`. They were compressed for the web
+(hero 2560 px, tiles 1200 px, lots 900 px) with `sips`. The lot photos are concept images, not the real
+facilities, so the pages label them "illustrative" and the lot details offer the real USGS aerial view
+beside them. The map's loading cover now lifts when the style arrives, since the animated beams keep the
+map from ever reporting "idle".
+
+**Follow-up, same day: the lot card.** The lot details became a place card in the manner of Apple
+Maps: an edge-to-edge picture that swipes between the illustrative photo and the real aerial, a back
+button on the picture, three quick facts with icons, one square per place (held ones filled, from F.4's
+remaining count), the "why this lot" facts as a checklist, and a booking bar that sticks to the bottom
+without covering the content. Result cards gained "Closest walk" and "Most room" tags.
+
+**Follow-up, same day: Liquid Glass across every page.** A new `style.css` puts every page on a night
+scene (blurred generated photographs, two slow light fields, fine grain) and every surface in frosted
+glass with a lit edge. The results page makes the map full-screen with the top bar, search and list
+floating over it, and the map's padding accounts for the floating panel. Primary buttons are white
+glowing pills; the pass has a moving sheen. While testing, a booking failed because the local database
+file had been deleted under the running server; the server was restarted, and test data is now cleared
+only with the server stopped.
+
+**Follow-up, same day: readable glass, map rotation, real lot photos.** Hangting asked for glass that stays
+transparent without hurting reading, a way to rotate the map, and real photos instead of generated ones.
+The glass now follows Apple's two materials: "regular" glass for panels you read, whose backdrop filter
+blurs and dims what is behind (so type keeps its contrast while colour still shows through), and "thin"
+glass for small controls; inner tiles are plain fills, and a gradient rim lights the top-left and
+bottom-right edges. Over the night map the glass is clearer, since the map is already dark; the day map
+flips every token to light glass with dark type and dark buttons. Secondary text was raised to 70% and
+52% opacity. The map gained a rotation dial (turn left, a compass that shows the heading and turns back
+to north, turn right, and a slow spin; a tap turns 45 degrees, holding keeps turning; Q, E and N on the
+keyboard), and the camera now keeps the floating panels as padding, so fly-ins and rotation centre on the
+visible map. The generated lot photos were removed. No freely licensed photo of the fixture lots exists,
+so each lot shows a real Wikimedia Commons photo of a comparable campus lot or garage, labelled "Similar
+lot" with author and licence; the aerial tab still shows the actual spot.
+
+**Fix, same day.** Hangting saw a flat map and an empty results panel in Chrome. Two causes: switching
+day and night let MapLibre diff the styles, which drops the added layers without firing `style.load`, so
+the 3D buildings, beams and walk never came back (now a full reload with `diff: false`); and a new search
+while a lot card was open left the panel marked as showing details (now cleared on every search).
+
+**Follow-up, same day: lighter pages, same look.** Hangting asked for faster loading without losing
+quality. Measured first: the home page sent about 1.8 MB (a 687 KB hero, which a hidden video's poster
+also fetched, and 1.1 MB of tiles below the fold); the results page fetched 960 px photos for 128 px
+thumbnails (360 KB) plus a hidden USGS aerial behind each card (0.5 to 0.7 s each); CSS and JS went
+uncompressed; and the map animation re-sent four GeoJSON sources to the map worker every frame. Changes:
+AVIF and WebP copies encoded from the originals (hero 240 KB, tiles 30 to 94 KB, checked at 1:1), tiles
+deferred with `content-visibility`, 360 px backdrops behind the blur, Commons photos at the drawn size,
+no hidden aerial layer, gzip for text, a week's cache for images, idle prefetch of the map library and
+preconnects, and a map loop that sends data only on change with the pulse and travelling light on
+feature state. The hidden video was also found to take the hero's place in the layout; it is now hidden
+properly and the film is opt-in. The home page's first screen is now about 245 KB.
+
+**Follow-up, same day: a new home picture.** Hangting supplied an autumn afternoon view (a parking terrace
+looking over the trees to the clock tower and the lake) for the home page. It was encoded to AVIF, WebP and
+JPEG under a new name, `hero-autumn`, so week-long caches cannot keep the old picture; the first AVIF came
+out flat grey because of the image's odd height, so it was cropped by one row. The brighter sky needed a
+soft radial shade behind the headline and a firmer text shadow, the demo-ID hint now sits on a thin glass
+pill over the stone wall, and on phones the crop moves toward the clock tower.
+
+**Follow-up, same day: the night map's 3D, and a home page in motion.** Hangting saw odd shadows on the
+night map. The night style's first label layer comes early (a water name), so the 3D buildings had been
+inserted below its flat black building footprints and every road, which then painted over them. The
+buildings now go after the last ground layer and before the labels that follow it. For the home page
+Hangting asked for as much motion as possible. The photograph now opens with a pull of focus; the
+headline's words rise in turn with a recurring warm sweep; the empty space between the painted lines
+(found from the photo's pixels: lines at x 623 to 573 and 1003 to 1089 between y 776 and 864) outlines
+itself in amber with a soft beam, rising motes and a tag that shows the arrival and stay being typed;
+leaves fall on two canvases, behind and in front of the words; the pointer drives a parallax and gusts
+of wind; scrolling pushes the camera in; the section below rises into view and its tiles tilt with a
+glare. The leaves pause when the hero is off screen, and reduced motion shows the final frame only.
+
+**Follow-up, same day: scenes.** Hangting liked the leaves and asked for more weather (cherry blossom,
+snow, rain, sun) with the background changing to match, a random scene by default, a menu to pick one or
+shuffle, and more backgrounds from real photos of Cayuga Lake and Ithaca. `static/scenes.js` now lists
+six scenes, each a particle effect and one or two Wikimedia Commons photographs (licences checked, places
+checked against each file's description and categories; a 7:1 panorama of the Arts Quad in snow was left
+out because no standard thumbnail is tall enough to fill a screen). It runs in the page head so the photo
+starts loading before the page draws. `home.js` gained petal, snow, rain (with splashes and lightning),
+sun (motes, with rays and a pointer-led lens flare in CSS) and firefly particles, cross-fades between
+photos, a menu with Shuffle (every 20 seconds, with a countdown ring) and Surprise me, and per-scene tints
+and shading. The amber outline appears only on the photo it was traced from. The unused video option was
+removed. No free photo of Ithaca's cherry trees in bloom was found, so the blossom scene uses spring views.
+
+**Follow-up, same day: product polish across the site.** Hangting asked for anything that would make the
+whole site feel more premium. Added: cross-document View Transitions (brand, top bar, trip, lot photo and
+ticket carry over between pages); a ⌘K command menu in a new shared `static/fx.js` (pages, parking near
+each destination, bookings on this device, and page commands for scenes and map controls); a pointer light
+on glass (a non-inheriting `--spot` custom property) and buttons that lean toward the pointer; arrow-key
+navigation and a trip timeline on the results page; a slide-to-confirm on the review page that stays a
+keyboard button; a pass that tilts with a foil, shows live whether the booking is soon, running or over,
+and opens with a burst after booking; live status chips on My bookings (new bookings record their day);
+count-ups on the staff page; an app icon, manifest, share image and a 404 page (the API keeps its JSON
+404, with a test for both). Tested in the browser end to end, including a booking made by sliding; the
+test booking was cleared afterwards with the server stopped.
+
+**2026-10-28: two display bugs found while taking screenshots for the October 30 discussion slides.**
+Headless screenshots of each page showed the lot photo on the results card collapsed to a thin strip.
+The slide-to-confirm control added the day before used the class `.slide`, which the results card's photo
+carousel already used, so the carousel picked up the control's 64px height. The control is now `.swipe`.
+The phone screenshot of the pass also broke the confirmation number after `RES-`; it now stays on one line
+and scales down on narrow screens. Booking by sliding was checked again after the rename, and the test
+bookings were cleared with the server stopped.
