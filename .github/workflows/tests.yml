@@ -1,0 +1,38 @@
+name: Tests
+
+# Every test that should pass on a working build. The Chapter 3 red acceptance suite is left to
+# chapter3-acceptance.yml, which fails on purpose until the stakeholder evidence exists.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out the project
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Install the app and test tools
+        run: python -m pip install -r requirements.txt -r requirements-dev.txt
+      - name: Functional requirement tests 1.4.1.1 to 1.4.1.11 (Chapter 5)
+        run: python -m pytest tests/test_functional_requirements.py -v
+      - name: Module signatures against the interface contract (Chapter 7)
+        run: python -m pytest tests/test_contract_conformance.py -v
+      - name: Second level of F.5, RS.1.4.1 to RS.1.4.4 (Chapter 9)
+        run: python -m pytest tests/test_f5_second_level.py -v
+      - name: C.5.3 Capacity Ledger component tests (Chapter 9)
+        run: python -m pytest tests/test_c5_3_capacity_ledger.py tests/test_c5_3_promoted_requirements.py -v
+      - name: Data access and walking skeleton
+        run: python -m pytest tests/test_data_access.py tests/test_skeleton.py tests/test_spec_coverage.py -v

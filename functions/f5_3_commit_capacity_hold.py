@@ -2,7 +2,7 @@
 
 ICOM on the second-level IDEF0 of F.5 Recheck and Record Reservation (Chapter 9):
     input     IO.21 Eligible Booking Request              from F.5.2 Recheck Booking Eligibility
-    control   IO.17 Approved Parking Rules and Capacity   from F.1 (C.1 Parking Control Subsystem)
+    control   IO.17 Approved Parking Rules and Capacity   from F.1 (C.1 Policy Manager)
     outputs   IO.8  Confirmed Reservation Record          to F.6 (C.6 Confirmation Subsystem)
               IO.18 Reservation Records                   to F.4 (C.4) and F.7 (C.7)
               IO.22 Booking Refusal Reason                to F.5.4 Issue Booking Refusal

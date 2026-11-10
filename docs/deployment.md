@@ -32,7 +32,7 @@ approve access (SPEC, data contract). There is no language model process; see AD
 
 | Subsystem | Performs | Code | State it owns |
 | --- | --- | --- | --- |
-| C.1 Parking Control Subsystem | F.1 | `functions/f1_apply_parking_controls.py` | Approved rules and approved staff accounts (`RulesStore`, in memory) |
+| C.1 Policy Manager | F.1 | `functions/f1_apply_parking_controls.py` | Approved rules and approved staff accounts (`RulesStore`, in memory) |
 | C.2 Trip Validation Subsystem | F.2 | `functions/f2_validate_trip_eligibility.py` | none |
 | C.3 Location Data Subsystem | F.3 | `functions/f3_gather_lot_location_and_route_data.py`, `integrations/map/client.py` | none |
 | C.4 Option Selection Subsystem | F.4 | `functions/f4_present_eligible_parking_options.py` | none |

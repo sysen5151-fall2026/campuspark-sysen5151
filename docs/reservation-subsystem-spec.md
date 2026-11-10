@@ -9,8 +9,8 @@ C.5 performs F.5 Recheck and Record Reservation. Its four components each perfor
 
 | Component | Performs | Description |
 | --- | --- | --- |
-| C.5.1 Booking Request Screener | F.5.1 Screen Reservation Request | Check that the reservation request has a request ID, a pool, the driver's identity reference and a valid booked period (end after start). A request that fails goes straight to the refusal function with the reason missing_data. |
-| C.5.2 Booking Eligibility Checker | F.5.2 Recheck Booking Eligibility | Recheck the driver's permit result and the approved permit list, time rules and closures for the whole booked period. Unknown, missing, failed or invalid eligibility never counts as permission. |
+| C.5.1 Request Validation Service | F.5.1 Screen Reservation Request | Check that the reservation request has a request ID, a pool, the driver's identity reference and a valid booked period (end after start). A request that fails goes straight to the refusal function with the reason missing_data. |
+| C.5.2 Permit Validation Service | F.5.2 Recheck Booking Eligibility | Recheck the driver's permit result and the approved permit list, time rules and closures for the whole booked period. Unknown, missing, failed or invalid eligibility never counts as permission. |
 | C.5.3 Capacity Ledger | F.5.3 Commit Capacity Hold | In one step, check that the pool has a free place for every minute of the booked period and save the reservation with its hold. A request ID that is already saved returns the saved reservation and adds no second hold. Publishes the saved records. |
 | C.5.4 Refusal Notice Builder | F.5.4 Issue Booking Refusal | Turn a refusal reason into the notice the driver sees, stating the specific reason in plain words. No record is created and no capacity is held. |
 
@@ -32,7 +32,7 @@ Satisfied by: C.5, IO.3, F.5.2. Traced from: 1.1.3.
 Rationale: The permit system, not CampusPark, decides who may park where.  
 Measure of performance: Eligibility results used for the matching driver only (100%). Verification: Send eligible, denied, unknown, missing and failed results; only an eligible result for the same driver passes.
 
-**RS.1.1.3 Accept Approved Parking Rules and Capacity.** The Reservation Subsystem shall accept Approved Parking Rules and Capacity from the Parking Control Subsystem.  
+**RS.1.1.3 Accept Approved Parking Rules and Capacity.** The Reservation Subsystem shall accept Approved Parking Rules and Capacity from the Policy Manager.  
 Satisfied by: C.5, IO.17, F.5.2, F.5.3. Traced from: 1.4.1.8.  
 Rationale: Bookings must be decided under the same rule set every other subsystem uses.  
 Measure of performance: Booking decisions made under the latest rule version (100%). Verification: Publish a new rule version and book; the decision follows the new version.
@@ -66,7 +66,7 @@ Satisfied by: C.5, X.C.3, conduit: Permit Eligibility Data Link. Traced from: 1.
 Rationale: The eligibility result used at commitment comes over this link.  
 Measure of performance: Timeouts that end in a refusal (100%). Verification: Simulate a permit timeout during booking; the booking is refused.
 
-**RS.1.3.3 Parking Control to Reservation.** The Reservation Subsystem shall interface with the Parking Control Subsystem through the Parking Control to Reservation link.  
+**RS.1.3.3 Parking Control to Reservation.** The Reservation Subsystem shall interface with the Policy Manager through the Parking Control to Reservation link.  
 Satisfied by: C.5, C.1, conduit: Parking Control to Reservation. Traced from: 1.4.1.8.  
 Rationale: The approved rules and capacity arrive over this internal link.  
 Measure of performance: Rule versions received in order (100%). Verification: Contract conformance test plus a rule-change booking test.

@@ -7,7 +7,18 @@ ICOM on the first-level IDEF0:
     outputs   IO.8  Confirmed Reservation Record           to F.6
               IO.13 Booking Refusal Notice                 to X.F.1
               IO.18 Reservation Records                    to F.7 (and F.4, see the F.4 note)
-Mechanism: none on the first-level IDEF0 yet. Saved reservations live in an injected store.
+Mechanism: C.5 Reservation Subsystem (Chapter 8). Saved reservations live in an injected store;
+the product injects the SQLite store in data/reservation_db.py.
+
+Second-level IDEF0 of F.5 (Chapter 9). Each step below is one function on that diagram:
+    F.5.1 Screen Reservation Request   C.5.1 Request Validation Service   _screen_request
+    F.5.2 Recheck Booking Eligibility  C.5.2 Permit Validation Service    _recheck_booking_eligibility
+    F.5.3 Commit Capacity Hold         C.5.3 Capacity Ledger              _commit_capacity_hold
+    F.5.4 Issue Booking Refusal        C.5.4 Refusal Notice Builder       _issue_booking_refusal
+Internal flows: IO.20 Screened Booking Request (F.5.1 to F.5.2), IO.21 Eligible Booking Request
+(F.5.2 to F.5.3), IO.22 Booking Refusal Reason (F.5.1, F.5.2 and F.5.3 to F.5.4). The C.5.3
+component built from its specification is functions/f5_3_commit_capacity_hold.py; it is tested on
+its own and is not yet on the booking path (docs/deployment.md).
 
 Shapes:
     IO.7   {"request_id": str, "driver_id": str, "pool_id": str, "start": int, "end": int}
@@ -60,21 +71,29 @@ def recheck_and_record_reservation(reservation_request: dict, *, eligibility: di
     """
     request = reservation_request if isinstance(reservation_request, dict) else {}
 
-    # A request_id already saved returns that booking and adds no second commitment (SR.4).
+    # F.5.3 rule checked first: a request_id already saved returns that booking and adds no
+    # second commitment, whatever the rules or free places are now (RS.1.4.3, SR.4).
     if _is_text(request.get("request_id")):
         saved = reservation_store.saved_for(request["request_id"])
         if saved is not None:
             return saved, None, reservation_store.all()
 
-    refusal = _recheck(request, eligibility, approved_rules, reservation_store)
-    if refusal is not None:
-        return None, refusal, reservation_store.all()
-    record = reservation_store.save(request)
-    return record, None, reservation_store.all()
+    refusal = _screen_request(request)
+    if refusal is None:
+        refusal = _recheck_booking_eligibility(request, eligibility, approved_rules)
+    if refusal is None:
+        record, refusal = _commit_capacity_hold(request, approved_rules, reservation_store)
+        if record is not None:
+            return record, None, reservation_store.all()
+    return None, refusal, reservation_store.all()
 
 
-def _recheck(request, eligibility, approved_rules, store):
-    """The refusal (IO.13) for this request, or None when it can be booked for the whole period."""
+def _screen_request(request):
+    """F.5.1 Screen Reservation Request, C.5.1 Request Validation Service (RS.1.4.1).
+
+    in: IO.7. out: None when the request goes on to F.5.2 as IO.20, otherwise the refusal
+    missing_data from F.5.4. No rule is read for a request that fails here.
+    """
     missing = [field for field in ("request_id", "driver_id", "pool_id")
                if not _is_text(request.get(field))]
     start, end = request.get("start"), request.get("end")
@@ -83,46 +102,86 @@ def _recheck(request, eligibility, approved_rules, store):
     if not (_is_int(end) and end <= _DAY_END and (not _is_int(start) or end > start)):
         missing.append("end")
     if missing:
-        return _refuse("missing_data", "The booking request is missing or has an invalid %s."
-                       % ", ".join(missing))
-
-    status = eligibility.get("status") if isinstance(eligibility, dict) else None
-    if status in ("invalid", "unknown"):
-        return _refuse("not_eligible", "The permit system did not confirm this driver's "
-                       "eligibility (status: %s), so the booking was not made." % status)
-    if status != "eligible":
-        return _refuse("missing_data", "The identity and permit check gave no usable answer "
-                       "(status: %s), so the booking was not made." % status)
-    if eligibility.get("driver_id") != request["driver_id"]:
-        return _refuse("not_eligible", "The eligibility answer is for a different driver, so "
-                       "the booking was not made.")
-    permit = eligibility.get("permit")
-    if not _is_text(permit):
-        return _refuse("missing_data", "The eligibility answer has no permit, so the permit rule "
-                       "could not be checked and the booking was not made.")
-
-    pool_id = request["pool_id"]
-    pools = approved_rules.get("pools") if isinstance(approved_rules, dict) else None
-    rule = pools.get(pool_id) if isinstance(pools, dict) else None
-    capacity = rule.get("capacity") if isinstance(rule, dict) else None
-    if not _is_int(capacity):
-        return _refuse("missing_data", "There are no approved rules or capacity for pool %s, so "
-                       "the booking was not made." % pool_id)
-    if permit not in (rule.get("permits") or []):
-        return _refuse("not_eligible", "Permit %s is not accepted in pool %s." % (permit, pool_id))
-    for closure in rule.get("closures") or []:
-        if _overlaps(start, end, closure):
-            return _refuse("closed", "Pool %s is closed %s-%s, which falls inside the booked "
-                           "period %s-%s." % (pool_id, _hhmm(closure["start"]),
-                                               _hhmm(closure["end"]), _hhmm(start), _hhmm(end)))
-    if _peak_held(store.all(), pool_id, start, end) >= capacity:
-        return _refuse("pool_full", "Pool %s has no free place for the whole period %s-%s."
-                       % (pool_id, _hhmm(start), _hhmm(end)))
+        return _issue_booking_refusal("missing_data", "The booking request is missing or has an "
+                                      "invalid %s." % ", ".join(missing))
     return None
 
 
-def _refuse(reason, message):
+def _recheck_booking_eligibility(request, eligibility, approved_rules):
+    """F.5.2 Recheck Booking Eligibility, C.5.2 Permit Validation Service (RS.1.4.2, RS.2.3).
+
+    in: IO.20. controls: IO.3, IO.17. out: None when the request goes on to F.5.3 as IO.21,
+    otherwise the refusal from F.5.4. Unknown, missing, failed or invalid eligibility never
+    counts as permission, and the permit list and closures are checked for the whole period.
+    """
+    start, end = request["start"], request["end"]
+    status = eligibility.get("status") if isinstance(eligibility, dict) else None
+    if status in ("invalid", "unknown"):
+        return _issue_booking_refusal("not_eligible", "The permit system did not confirm this "
+                                      "driver's eligibility (status: %s), so the booking was not "
+                                      "made." % status)
+    if status != "eligible":
+        return _issue_booking_refusal("missing_data", "The identity and permit check gave no "
+                                      "usable answer (status: %s), so the booking was not made."
+                                      % status)
+    if eligibility.get("driver_id") != request["driver_id"]:
+        return _issue_booking_refusal("not_eligible", "The eligibility answer is for a different "
+                                      "driver, so the booking was not made.")
+    permit = eligibility.get("permit")
+    if not _is_text(permit):
+        return _issue_booking_refusal("missing_data", "The eligibility answer has no permit, so "
+                                      "the permit rule could not be checked and the booking was "
+                                      "not made.")
+
+    pool_id = request["pool_id"]
+    rule = _pool_rule(approved_rules, pool_id)
+    if rule is None:
+        return _issue_booking_refusal("missing_data", "There are no approved rules or capacity "
+                                      "for pool %s, so the booking was not made." % pool_id)
+    if permit not in (rule.get("permits") or []):
+        return _issue_booking_refusal("not_eligible", "Permit %s is not accepted in pool %s."
+                                      % (permit, pool_id))
+    for closure in rule.get("closures") or []:
+        if _overlaps(start, end, closure):
+            return _issue_booking_refusal("closed", "Pool %s is closed %s-%s, which falls inside "
+                                          "the booked period %s-%s."
+                                          % (pool_id, _hhmm(closure["start"]),
+                                             _hhmm(closure["end"]), _hhmm(start), _hhmm(end)))
+    return None
+
+
+def _commit_capacity_hold(request, approved_rules, store):
+    """F.5.3 Commit Capacity Hold, C.5.3 Capacity Ledger (RS.1.4.3, RS.2.5).
+
+    in: IO.21. control: IO.17. mechanism: store. out: (IO.8, None) when a place is free for every
+    minute of the period and the reservation is saved, otherwise (None, pool_full refusal from
+    F.5.4). In the product, api/service.py runs bookings one at a time so the check and the save
+    cannot interleave between two drivers.
+    """
+    pool_id, start, end = request["pool_id"], request["start"], request["end"]
+    capacity = _pool_rule(approved_rules, pool_id)["capacity"]
+    if _peak_held(store.all(), pool_id, start, end) >= capacity:
+        return None, _issue_booking_refusal("pool_full", "Pool %s has no free place for the whole "
+                                            "period %s-%s." % (pool_id, _hhmm(start), _hhmm(end)))
+    return store.save(request), None
+
+
+def _issue_booking_refusal(reason, message):
+    """F.5.4 Issue Booking Refusal, C.5.4 Refusal Notice Builder (RS.1.4.4).
+
+    in: IO.22 (the reason and its details). out: IO.13, a notice that names the specific reason.
+    No record is created and no capacity is held.
+    """
     return {"reason": reason, "message": message}
+
+
+def _pool_rule(approved_rules, pool_id):
+    """The approved rule for the pool in IO.17, or None when it or its capacity is missing."""
+    pools = approved_rules.get("pools") if isinstance(approved_rules, dict) else None
+    rule = pools.get(pool_id) if isinstance(pools, dict) else None
+    if not isinstance(rule, dict) or not _is_int(rule.get("capacity")):
+        return None
+    return rule
 
 
 def _peak_held(records, pool_id, start, end):
