@@ -63,3 +63,25 @@ def test_database_rejects_a_second_record_for_the_same_request_id():
     store.save(request("a"))
     with pytest.raises(sqlite3.IntegrityError):
         store.save(request("a"))
+
+def test_two_connections_compete_for_the_final_place(tmp_path):
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+
+    path = tmp_path / "last-place.db"
+    stores = [SqliteReservationStore(path), SqliteReservationStore(path)]
+    gate = Barrier(2)
+
+    def compete(i):
+        gate.wait()
+        return book(stores[i], request(str(i)))
+
+    try:
+        with ThreadPoolExecutor(max_workers=2) as workers:
+            results = list(workers.map(compete, range(2)))
+        assert sum(record is not None for record, _, _ in results) == 1
+        assert [refusal["reason"] for _, refusal, _ in results if refusal] == ["pool_full"]
+        assert len(stores[0].all()) == 1
+    finally:
+        for store in stores:
+            store.close()
