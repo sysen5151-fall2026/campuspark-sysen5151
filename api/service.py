@@ -123,9 +123,9 @@ def book(parking_request, pool_id, request_id=None, search_id=None):
         return {"error_kind": "identity"}
     reservation_request = {"request_id": request_id or uuid.uuid4().hex, "driver_id": trip["driver_id"],
                            "pool_id": pool_id, "start": trip["start"], "end": trip["end"]}
-    # F.5 checks capacity and then saves. One booking at a time keeps those two steps together
-    # until C.5.3 Capacity Ledger takes over the commitment (RS.1.4.3, RS.2.5).
+    # Use the current local rules at commit. The SQLite transaction guards shared capacity.
     with _lock:
+        rules = approved_rules()
         record, refusal, _ = recheck_and_record_reservation(
             reservation_request, eligibility=eligibility, approved_rules=rules,
             reservation_store=_ready()["store"])

@@ -197,6 +197,18 @@ def test_overlapping_booking_is_refused_when_pool_is_full(small_pools):
     assert book("one", "09:00", 2)
     assert not book("one", "10:00", 2)    # 10:00-12:00 overlaps
 
+def test_final_place_refusal_and_retry_survive_restart(tmp_path):
+    path = tmp_path / "route.db"
+    service.reset(path, pools=SMALL_POOLS)
+    first = trip(lot_id="one", request_id="first")
+    next_request = trip(lot_id="one", request_id="second")
+    saved = client.post("/api/reserve", json=first).json()["confirmation"]
+    assert client.post("/api/reserve", json=next_request).json()["reason"] == "pool_full"
+    service.reset(path, pools=SMALL_POOLS)
+    assert client.post("/api/reserve", json=first).json()["confirmation"] == saved
+    assert client.post("/api/reserve", json=next_request).json()["reason"] == "pool_full"
+    assert len(service.records()) == 1
+
 
 def test_back_to_back_bookings_do_not_overlap(small_pools):
     assert book("one", "09:00", 1)

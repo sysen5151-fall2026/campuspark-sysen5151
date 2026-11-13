@@ -72,8 +72,7 @@ database, not on the conduits.
   set `CAMPUSPARK_DB` to use another file.
 - The approved rules (C.1) are still held in memory, so a change made in the staff console lasts
   until the server restarts. Persisting them is the next data access step.
-- F.5 checks capacity and then saves. `api/service.py` serializes bookings with one lock so the two
-  steps cannot interleave between requests; C.5.3 Capacity Ledger, which does both in one step
-  (RS.1.4.3, RS.2.5), is built and tested but not yet on the booking path.
+- F.5 directly calls C.5.3. The SQLite store checks and records the hold in a single write
+  transaction, including when two connections share a database file. ADR-0006 records the trade.
 - The staff check is the fixture account `admin01`, not a sign-in. Real staff accounts come from
   Campus IT (2.1.4).

@@ -40,9 +40,9 @@ Refusal Reason have schemas under `x-c5-internal-flows` in `contracts/api-v1.yam
 operation `recheckAndRecordReservation` and the F.5.3 operation for the Capacity Ledger. The driver
 reaches F.5 through `POST /api/reserve` (row 4 of `docs/route-table.md`, UC.1.7 to UC.1.9).
 
-The booking route still runs F.5.3 inside the F.5 module, with `api/service.py` taking bookings one
-at a time. The C.5.3 component does the check and the save in one step inside the ledger and passes
-its own tests, including 100 rounds of 100 concurrent requests for the last place; moving the
-booking route onto it is the open integration step in `docs/deployment.md`.
+The booking route calls the F.5.3 ledger directly. Its SQLite transaction checks the busiest
+minute and saves the hold under the same write lock. The component test covers 100 bursts of
+100 requests. The store test covers two connections, and the API test covers refusal and retry
+after a restart. See ADR-0006 and RK.1 in `docs/risks.md`.
 
 All of these tests run in `.github/workflows/tests.yml`.

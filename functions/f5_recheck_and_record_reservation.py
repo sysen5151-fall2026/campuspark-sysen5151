@@ -18,7 +18,7 @@ Second-level IDEF0 of F.5 (Chapter 9). Each step below is one function on that d
 Internal flows: IO.20 Screened Booking Request (F.5.1 to F.5.2), IO.21 Eligible Booking Request
 (F.5.2 to F.5.3), IO.22 Booking Refusal Reason (F.5.1, F.5.2 and F.5.3 to F.5.4). The C.5.3
 component built from its specification is functions/f5_3_commit_capacity_hold.py; it is tested on
-its own and is not yet on the booking path (docs/deployment.md).
+its own and used on the SQLite booking path (ADR-0006).
 
 Shapes:
     IO.7   {"request_id": str, "driver_id": str, "pool_id": str, "start": int, "end": int}
@@ -31,6 +31,8 @@ The body was added in Chapter 5; the signatures and shapes above are unchanged.
 """
 
 import copy
+
+from functions.f5_3_commit_capacity_hold import commit_capacity_hold
 
 _DAY_END = 24 * 60
 
@@ -155,15 +157,20 @@ def _commit_capacity_hold(request, approved_rules, store):
 
     in: IO.21. control: IO.17. mechanism: store. out: (IO.8, None) when a place is free for every
     minute of the period and the reservation is saved, otherwise (None, pool_full refusal from
-    F.5.4). In the product, api/service.py runs bookings one at a time so the check and the save
-    cannot interleave between two drivers.
+    F.5.4). The persistent store checks and saves inside one SQLite write transaction.
     """
     pool_id, start, end = request["pool_id"], request["start"], request["end"]
     capacity = _pool_rule(approved_rules, pool_id)["capacity"]
-    if _peak_held(store.all(), pool_id, start, end) >= capacity:
-        return None, _issue_booking_refusal("pool_full", "Pool %s has no free place for the whole "
-                                            "period %s-%s." % (pool_id, _hhmm(start), _hhmm(end)))
-    return store.save(request), None
+    if hasattr(store, "_commit"):
+        record, _, reason = commit_capacity_hold(request, approved_rules=approved_rules, ledger=store)
+        if reason is None:
+            return record, None
+        if reason["reason"] == "missing_data":
+            return None, _issue_booking_refusal("missing_data", "The lot has no valid capacity.")
+    elif _peak_held(store.all(), pool_id, start, end) < capacity:
+        return store.save(request), None
+    return None, _issue_booking_refusal("pool_full", "Pool %s has no free place for the whole "
+                                        "period %s-%s." % (pool_id, _hhmm(start), _hhmm(end)))
 
 
 def _issue_booking_refusal(reason, message):
