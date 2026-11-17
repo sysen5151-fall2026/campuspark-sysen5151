@@ -85,11 +85,11 @@ A scenario to try, taken from UC.1 and UC.2:
 
 ## Status
 
-As of November 2026. Working means it runs in the product and has passing tests. Partial means it runs but something it depends on is still a stand-in.
+As of November 2026. Working means it runs in the product and has passing tests. Partial means it runs but something it depends on is still a stand-in. The OpsCon diagram in Innoslate (the Asset Diagram of 0 Universe) carries the same marks: green for working, orange for partial, gray for not yet built.
 
 | Part | In the model | In the repository | State |
 | --- | --- | --- | --- |
-| Driver pages | Campus Driver, Driver Web Interface | `web/`, `api/main.py` | Working |
+| Driver pages | X.C.1 Campus Driver, Driver Web Interface | `web/`, `api/main.py` | Working |
 | C.1 Policy Manager | F.1 | `functions/f1_apply_parking_controls.py`, `web/admin.html` | Partial: rules are held in memory, and the staff check is the fixture account `admin01`, not a sign-in |
 | C.2 Trip Validation Subsystem | F.2 | `functions/f2_validate_trip_eligibility.py` | Working |
 | C.3 Location Data Subsystem | F.3 | `functions/f3_gather_lot_location_and_route_data.py` | Partial: lot locations and walking times come from fixture data |
@@ -99,7 +99,7 @@ As of November 2026. Working means it runs in the product and has passing tests.
 | C.7 Reporting Subsystem | F.7 | `functions/f7_report_reservations_and_affected_bookings.py` | Working: the staff console lists bookings a change affects |
 | Campus Identity & Permit System | X.C.3 | `integrations/permit/` | Partial: fixture permits until Campus IT approves access |
 | Campus Map & Navigation Service | X.C.4 | `integrations/map/` | Partial: fixture map data until the map owner approves access |
-| Parking Administrator | external actor | `web/admin.html`, `/api/admin/*` | Working with the fixture account |
+| Parking Administrator | X.C.2, Administrator Console Interface | `web/admin.html`, `/api/admin/*` | Partial: the console works, but with the fixture account and rules that reset on restart |
 | AI parking help | candidate F.9, SR.17, SR.18 | none | Not yet built (ADR-0005) |
 
 ## What changed from the concept
