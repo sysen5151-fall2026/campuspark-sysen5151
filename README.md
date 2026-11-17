@@ -2,6 +2,8 @@
 
 Permit-aware campus parking recommendation and reservation platform. Course project for SYSEN 5151, Team 25.
 
+The product runs end to end from this repository: search, booking with a second check, the pass, cancellation, and a staff console that changes the rules. The permit and map services are still fixture data. The [status table](#status) says what works, what is partial and what is not built yet.
+
 ## What problem this addresses
 
 A campus driver has to answer several questions before every trip. Where am I allowed to park with my permit. How far is that lot from where I am actually going. Will there be a space when I arrive. Today those answers live in different places, so the driver ends up comparing them by hand and often still guesses wrong.
@@ -46,60 +48,99 @@ That boundary follows from the solution class we picked. Of the three we evaluat
 ## Repository layout
 
 ```
-api/                  CampusPark itself: eligibility filtering, option ranking, reservations
-integrations/permit/  Client for the Campus Identity & Permit System
-integrations/map/     Client for the Campus Map & Navigation Service
-web/                  Driver-facing interface
-docs/                 SPEC.md, TRACE.md, prompt log: notes that tie code back to the model
-tests/                Chapter 3 acceptance cases, trace check, named red tests, skeleton developer tests
-.github/workflows/    Automatic Chapter 3 acceptance checks
+api/                  Web routes (main.py) and the wiring that runs the functions in use-case order (service.py)
+functions/            One module per first-level function, F.1 to F.7, plus C.5.3 Capacity Ledger and SR.6 cancellation
+data/                 SQLite schema and data access for saved reservations (C.5)
+integrations/permit/  Client for the Campus Identity & Permit System, fixture data for now
+integrations/map/     Client for the Campus Map & Navigation Service, fixture data for now
+contracts/            api-v1.yaml, the interface contract between functions, and the stubs generated from it
+web/                  Driver pages and the staff console
+docs/                 SPEC, traceability, route table, deployment view, ADRs, risks, prompt and deviation logs
+prompts/              Prompts used to generate components from their specifications
+tests/                Tests named by requirement ID, contract checks, Chapter 3 acceptance placeholders
+tools/                gen_stubs.py rebuilds contracts/generated from the contract
+.github/workflows/    tests.yml (should pass) and chapter3-acceptance.yml (fails on purpose)
 ```
 
-The top-level folders follow the system context rather than a framework's default layout, so each external system in the model has one place in the code where it is dealt with.
+The layout follows the model. Each function on the first-level IDEF0 has one module in `functions/`, and each external system has one folder in `integrations/`. `docs/traceability.md` maps every function to its module, requirements and tests, and `docs/deployment.md` maps every subsystem to its code.
 
 ## Running it
 
 ```
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
-.venv/bin/uvicorn api.main:app --reload
+.venv/bin/uvicorn api.main:app --port 8000
 ```
 
-Then open http://127.0.0.1:8000. Try driver IDs `student01`, `staff01` and
-`visitor01`. They hold different permits, so they get different lots back,
-which is the point of the whole system. A blank or made-up ID gets no options
-at all, since we can't confirm a permit for it.
+Then open http://127.0.0.1:8000. Driver IDs `student01`, `staff01` and `visitor01` hold different permits, so they get different lots back. A blank or made-up ID gets no options, since no permit can be confirmed for it. The staff console is at http://127.0.0.1:8000/admin with the demo account `admin01`.
+
+Bookings are saved in `data/campuspark.db`, which is not committed, and they survive a restart. Staff rule changes are held in memory and reset when the server restarts.
+
+A scenario to try, taken from UC.1 and UC.2:
+
+1. As `student01`, search for Duffield Hall, arriving later today for two hours. Only lots the student permit allows come back, nearest first.
+2. Pick Forest Home Drive, reserve it and slide to confirm. The pass shows the booking and how far the walk is.
+3. Pick A Lot and stop on the review page. In the staff console, close A Lot for part of that period. Back on the review page, slide to confirm: the booking is refused with the reason, because F.5 rechecks the rules at booking time.
+4. Open the Forest Home booking from My bookings and cancel it. The place goes back to the lot.
 
 ## Status
 
-The model is further along than the build, which is the order the course asks for.
+As of November 2026. Working means it runs in the product and has passing tests. Partial means it runs but something it depends on is still a stand-in.
 
-Done: business and mission analysis, operational concept, system context and hierarchy, UC.1 as use case, action, activity and sequence diagrams, the operational requirements document imported into Innoslate, and a walking skeleton that runs UC.1 end to end.
+| Part | In the model | In the repository | State |
+| --- | --- | --- | --- |
+| Driver pages | Campus Driver, Driver Web Interface | `web/`, `api/main.py` | Working |
+| C.1 Policy Manager | F.1 | `functions/f1_apply_parking_controls.py`, `web/admin.html` | Partial: rules are held in memory, and the staff check is the fixture account `admin01`, not a sign-in |
+| C.2 Trip Validation Subsystem | F.2 | `functions/f2_validate_trip_eligibility.py` | Working |
+| C.3 Location Data Subsystem | F.3 | `functions/f3_gather_lot_location_and_route_data.py` | Partial: lot locations and walking times come from fixture data |
+| C.4 Option Selection Subsystem | F.4 | `functions/f4_present_eligible_parking_options.py` | Working |
+| C.5 Reservation Subsystem | F.5, F.5.1 to F.5.4 | `functions/f5_*.py`, `functions/cancel_future_reservation.py`, `data/` | Working: SQLite records, the final place guarded in one write transaction, cancellation before the start |
+| C.6 Confirmation Subsystem | F.6 | `functions/f6_provide_confirmation_and_route_guidance.py` | Working |
+| C.7 Reporting Subsystem | F.7 | `functions/f7_report_reservations_and_affected_bookings.py` | Working: the staff console lists bookings a change affects |
+| Campus Identity & Permit System | X.C.3 | `integrations/permit/` | Partial: fixture permits until Campus IT approves access |
+| Campus Map & Navigation Service | X.C.4 | `integrations/map/` | Partial: fixture map data until the map owner approves access |
+| Parking Administrator | external actor | `web/admin.html`, `/api/admin/*` | Working with the fixture account |
+| AI parking help | candidate F.9, SR.17, SR.18 | none | Not yet built (ADR-0005) |
 
-The skeleton covers the success path. The permit system and the map service are fixture data, reservations live in memory and disappear on restart, and the ranking is walk time with capacity as a tie breaker rather than anything considered. Bookings are counted over the whole requested period on a single undated day, so two overlapping stays can't push a lot past its capacity.
+## What changed from the concept
 
-Chapter 3: `docs/SPEC.md` now links 13 needs to 18 stakeholder requirements through 20 acceptance cases. It contains the data and AI response contracts. Each case has a named red test. One separate test checks that the SPEC, case list, and test names agree. The acceptance tests fail on purpose at this chapter, as the lab manual requires. They do not claim that the product passed field or user tests.
+- Reservations started in memory and disappeared on restart. They now live in SQLite, and the check for the last place and the save happen in one write transaction, so two drivers cannot get the same place (ADR-0004, ADR-0006, risk RK.1).
+- Cancellation was in the specification as SR.6 but had no function in the model. We built it after TA feedback, and adding it to the model is the next model change.
+- AI parking help is in the SPEC, but nothing in the model calls for it yet, so no model adapter was built (ADR-0005).
 
-The Chapter 3 measures and contracts are proposed for team and stakeholder review. The SPEC records the earlier 20% search-time and 90% usable-option targets alongside the newer draft measures so the team can review the differences.
+## What is left
 
-Next: review these proposed criteria and implement the named checks in later chapters. The walking skeleton still uses fixtures and memory. Chapter 3 adds the specification and acceptance checks; it does not add unreviewed application behavior.
+- Keep approved rules in the database so staff changes survive a restart.
+- Connect the permit and map clients to the real campus services once access is approved.
+- Add cancellation and AI help (F.9) to the Innoslate model, then build the AI adapter from the SPEC response contract.
+- Support dates. Every booking is for today for now.
+- A real staff sign-in instead of the fixture account.
+- Lab 13: the integration sequence as an action diagram, Project Task 8, and the integrated build (due December 7).
 
-## Chapter 3 checks
+## Tests
 
-`docs/SPEC.md` is the specification used for later prompts and build work. It is kept at the existing repository path. See `tests/acceptance_cases.json` for the full 20-case need-to-requirement mapping.
-
-```text
-python -m pip install -r requirements.txt -r requirements-dev.txt
-python -m pytest tests/ -v
+```
+.venv/bin/pip install -r requirements-dev.txt
+.venv/bin/python -m pytest tests --ignore=tests/test_spec_acceptance.py
 ```
 
-The Chapter 3 result is one passing trace check, the skeleton developer tests passing, and 20 deliberately failing acceptance placeholders. Each failure names its need and criterion. Replace a placeholder with a real check when that criterion is implemented; the trace check also supports passing acceptance tests.
+157 tests pass, and GitHub Actions runs the same set in `.github/workflows/tests.yml` on every push. Tests are named by the requirement they check, for example `test_FR_1_4_1_5_...` for system requirement 1.4.1.5 and `test_SR_6_...` for cancellation.
 
-The developer tests in `tests/test_skeleton.py` only check that the skeleton does what its code says. They are not acceptance evidence, and they live in their own file so the trace check, which expects exactly the 20 named tests in `test_spec_acceptance.py`, keeps passing. `docs/TRACE.md` walks one need all the way to the code and lists what every file is there for.
+`tests/test_spec_acceptance.py` holds the 20 Chapter 3 acceptance placeholders, one per acceptance case in `docs/SPEC.md`. They fail on purpose until real stakeholder or field evidence exists, and `chapter3-acceptance.yml` runs them separately so a red run there is expected. They do not claim the product passed field or user tests.
 
-[GitHub Actions](https://github.com/sysen5151-fall2026/campuspark-sysen5151/actions) runs `.github/workflows/chapter3-acceptance.yml` on pushes and pull requests. It checks trace coverage, runs the developer tests, then runs the red acceptance suite. A failed acceptance test makes the job fail normally, and the run summary says which failures are expected. The workflow does not hide failures or call them passing product tests.
+## Where to read more
+
+| File | What it holds |
+| --- | --- |
+| `docs/SPEC.md` | Needs, stakeholder requirements, acceptance cases, data and AI response contracts |
+| `docs/traceability.md` | Function to module to requirement to test |
+| `docs/route-table.md` | Every route and the use case step it serves |
+| `docs/deployment.md` | Subsystems, conduits and where each runs |
+| `docs/reservation-subsystem-spec.md` | Chapter 9 specification of C.5 |
+| `docs/adr/` | Architecture decisions |
+| `docs/risks.md` | Product risk register |
+| `docs/prompt-log.md`, `docs/deviation-log.md` | How AI-generated code was prompted and reviewed |
 
 ## Team
 
 Hangting Zhu, Junjie Luo, Yixuan Zhu, Yuxin Wang
-
