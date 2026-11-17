@@ -1,10 +1,14 @@
 // The confirmation: a success moment when you have just booked, then the pass you show and keep.
+// Before the stay starts the driver can cancel it here, and the place goes back to the lot (SR.6).
 import { api, esc, session, recent } from "/static/common.js";
 
 const $ = id => document.getElementById(id);
 const id = decodeURIComponent(location.pathname.split("/").pop());
-const fresh = session.take("cp.justBooked") === id;
-const driver = session.driver || (recent.all().find(b => b.id === id) || {}).driver || "";
+let fresh = session.take("cp.justBooked") === id;
+let driver = session.driver || (recent.all().find(b => b.id === id) || {}).driver || "";
+let justCancelled = false, timer = null;
+
+const at = hhmm => { const [h, m] = hhmm.split(":").map(Number); const d = new Date(); d.setHours(h, m, 0, 0); return d; };
 
 function today() {
   const d = new Date();
@@ -23,15 +27,19 @@ function ics(b) {
 }
 
 function render(b) {
+  const cancelled = b.status === "cancelled";
   $("main").innerHTML = `
-    ${fresh ? `<div class="done-head">
+    ${justCancelled ? `<div class="done-head">
+        <h1>Booking cancelled.</h1>
+        <p>Your place at ${esc(b.lot)} from ${esc(b.start)} to ${esc(b.end)} is free for someone else now.</p>
+      </div>` : fresh ? `<div class="done-head">
         <svg class="check" viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="36"/><path d="M24 41l11 11 21-23"/></svg>
         <h1>You're all set.</h1>
         <p>Your place at ${esc(b.lot)} is held from ${esc(b.start)} to ${esc(b.end)}.</p>
       </div>` : `<p class="steps">My bookings</p><h1 style="margin-bottom:22px">Your booking.</h1>`}
-    <article class="pass" aria-label="Parking pass">
+    <article class="pass${cancelled ? " cancelled" : ""}" aria-label="Parking pass">
       <i class="holo" aria-hidden="true"></i>
-      <div class="pass-top"><b>CampusPark</b><span>Held</span></div>
+      <div class="pass-top"><b>CampusPark</b><span>${cancelled ? "Cancelled" : "Held"}</span></div>
       <div class="pass-main">
         <div class="live" id="live" aria-live="polite"><span class="dot"></span><b id="live-text"></b><span class="meter"><i id="live-bar"></i></span></div>
         <small>Lot</small>
@@ -48,30 +56,58 @@ function render(b) {
         <div class="qr" id="qr" aria-label="QR code for ${esc(b.confirmation)}"></div>
       </div>
     </article>
+    ${cancelled ? `<div class="actions one"><a class="btn dark" href="/">Find another place</a></div>` : `
     <p class="guide">${b.guidance ? esc(b.guidance) : ""}</p>
     ${b.warning ? `<p class="warnbox">${esc(b.warning)}</p>` : ""}
     <div class="actions">
       <a class="btn dark" target="_blank" rel="noopener" href="https://maps.apple.com/?daddr=${encodeURIComponent(b.address)}">Get directions</a>
       <a class="btn ghost" id="cal" download="campuspark-${esc(b.confirmation)}.ics">Add to calendar</a>
     </div>
+    <div class="cancel-zone" id="cancel-zone"></div>`}
     <p style="text-align:center;margin-top:18px"><a href="/">Done</a></p>
     <p class="fine">${esc(b.note)}</p>`;
-  $("cal").href = ics(b);
+  if ($("cal")) $("cal").href = ics(b);
   if (window.QRCode) new QRCode($("qr"), {text: b.confirmation, width: 92, height: 92, colorDark: "#111", colorLight: "#fff"});
   live(b);
-  setInterval(() => live(b), 20000);
+  clearInterval(timer);
+  timer = setInterval(() => { live(b); cancelZone(b); }, 20000);
+  cancelZone(b);
   tilt(document.querySelector(".pass"));
   if (fresh) burst();
 }
 
+// SR.6: a booking that has not started yet can be cancelled, after one confirming tap
+function cancelZone(b) {
+  const zone = $("cancel-zone");
+  if (!zone || zone.dataset.asking) return;
+  if (b.status === "cancelled" || new Date() >= at(b.start)) { zone.innerHTML = ""; return; }
+  if ($("cancel")) return;
+  zone.innerHTML = `<button class="btn ghost full" id="cancel">Cancel booking</button>`;
+  $("cancel").addEventListener("click", () => {
+    zone.dataset.asking = "1";
+    zone.innerHTML = `<p class="cancel-ask">Cancel this booking? Your place goes back to the lot for someone else.</p>
+      <div class="actions"><button class="btn dark" id="cancel-yes">Yes, cancel it</button><button class="btn ghost" id="cancel-no">Keep it</button></div>`;
+    $("cancel-no").addEventListener("click", () => { delete zone.dataset.asking; zone.innerHTML = ""; cancelZone(b); });
+    $("cancel-yes").addEventListener("click", async () => {
+      $("cancel-yes").disabled = true;
+      const res = await api(`/api/reservations/${encodeURIComponent(b.confirmation)}/cancel`, {driver_id: driver});
+      if (res.error) { delete zone.dataset.asking; zone.innerHTML = `<p class="warnbox">${esc(res.error)}</p>`; return; }
+      justCancelled = true; fresh = false;
+      recent.mark(b.confirmation, "cancelled");
+      render(res);
+      scrollTo({top: 0, behavior: "smooth"});
+    });
+  });
+}
+
 // where today's booking stands right now: before it, during it (with the share of the stay gone), or after
 function live(b) {
-  const at = hhmm => { const [h, m] = hhmm.split(":").map(Number); const d = new Date(); d.setHours(h, m, 0, 0); return d; };
   const start = at(b.start), end = at(b.end), now = new Date();
   const span = mins => mins >= 60 ? `${Math.floor(mins / 60)} h ${mins % 60} min` : `${mins} min`;
   const box = $("live");
   let text, state, share = 0;
-  if (now < start) { state = "soon"; text = `Starts in ${span(Math.ceil((start - now) / 60000))}`; }
+  if (b.status === "cancelled") { state = "cancelled"; text = "Cancelled · place released"; }
+  else if (now < start) { state = "soon"; text = `Starts in ${span(Math.ceil((start - now) / 60000))}`; }
   else if (now < end) { state = "now"; text = `Held now · ${span(Math.ceil((end - now) / 60000))} left`; share = (now - start) / (end - start); }
   else { state = "over"; text = `Ended at ${b.end}`; share = 1; }
   box.dataset.state = state;
@@ -147,6 +183,8 @@ async function load(driverId) {
     $("who").addEventListener("submit", e => { e.preventDefault(); session.driver = $("d").value.trim(); load(session.driver); });
     return;
   }
+  driver = driverId;
+  if (res.status === "cancelled") recent.mark(id, "cancelled");
   render(res);
 }
 

@@ -17,6 +17,7 @@ model (UC.1 Driver Finds and Reserves Campus Parking, UC.2 Maintain Parking Rule
 | 3 | `POST /api/options` | "Find parking" | F.2, X.F.3, F.3, X.F.4, F.4 | UC.1 | UC.1.1 to UC.1.6 |
 | 4 | `POST /api/reserve` | "Reserve ..." | F.2, X.F.3, F.5, F.6 | UC.1 | UC.1.7 to UC.1.9 |
 | 5 | `GET /api/reservations/{id}` | "Find my booking" | F.6 on a saved record, for its own driver only | UC.1 | UC.1.10: the driver reviews the confirmation |
+| 5b | `POST /api/reservations/{id}/cancel` | "Cancel booking" on the pass, then "Yes, cancel it" | `cancel_future_reservation` on the C.5 store, then F.6 to show the cancelled pass | UC.1 | none yet: SR.6, not in a use case step (see `docs/traceability.md`) |
 | 5a | `GET /api/map` | page load of `web/index.html` | approximate map positions from the map fixture | UC.1 | UC.1.6: the options shown on the map, display only |
 | 6 | `GET /admin` | Parking Administrator opens the staff console | serves `web/admin.html` | UC.2 | |
 | 7 | `GET /api/admin/pools` | staff console load | IO.17 now in force | UC.2 | the administrator reviews current controls |
@@ -37,7 +38,7 @@ None. UC.2 was planned at the first audit and now has rows 6 to 8.
 
 ## Reconciling the counts
 
-Two use cases in the model, thirteen entry points: ten on UC.1 (five pages and five data routes) and three on UC.2. Every function F.1 to
+Two use cases in the model, fourteen entry points: eleven on UC.1 (five pages and six data routes) and three on UC.2. Row 5b, cancelling a booking, serves SR.6 and has no use case step yet; it is listed under UC.1 because the driver reaches it from the pass. Every function F.1 to
 F.7 is reached from at least one route. The Chapter 2 helpers that duplicated the rules
 (`api/eligibility.py`, `api/ranking.py`, `api/reservations.py`) were removed when the routes moved
 onto `functions/`.

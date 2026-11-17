@@ -1,4 +1,8 @@
-"""Persistent bookings for C.5.3. One write transaction protects the final place."""
+"""Persistent bookings for C.5.3. One write transaction protects the final place.
+
+cancel() marks a saved booking cancelled for SR.6 (functions/cancel_future_reservation.py). Places
+are counted from confirmed records only, so a cancelled booking releases its places at once.
+"""
 
 import pathlib
 import sqlite3
@@ -18,6 +22,7 @@ class SqliteReservationStore:
         self._lock = threading.RLock()
         self._db = sqlite3.connect(str(path), check_same_thread=False)
         self._db.executescript(SCHEMA.read_text())
+        _allow_cancelled_status(self._db)
 
     def all(self) -> list:
         """Every saved reservation, oldest first (IO.18)."""
@@ -61,6 +66,31 @@ class SqliteReservationStore:
                          tuple(record[f] for f in FIELDS))
         return record
 
+    def cancel(self, reservation_id):
+        """Mark a saved reservation cancelled and return it, or None if there is no such booking."""
+        with self._lock:
+            with self._db:
+                self._db.execute("UPDATE reservations SET status = 'cancelled' WHERE reservation_id = ?",
+                                 (reservation_id,))
+            row = self._db.execute(_SELECT + " WHERE reservation_id = ?", (reservation_id,)).fetchone()
+        return dict(zip(FIELDS, row)) if row else None
+
     def close(self):
         with self._lock:
             self._db.close()
+
+
+def _allow_cancelled_status(db):
+    """A database made before SR.6 only accepts 'confirmed'. Rebuild its table once, keeping every row
+    in the same order, so a cancelled booking can be saved."""
+    row = db.execute("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'reservations'").fetchone()
+    if row is None or "'cancelled'" in row[0]:
+        return
+    db.executescript(
+        "BEGIN;"
+        "ALTER TABLE reservations RENAME TO reservations_before_sr6;"
+        "DROP INDEX IF EXISTS reservations_by_pool;"
+        + SCHEMA.read_text() +
+        "INSERT INTO reservations SELECT * FROM reservations_before_sr6 ORDER BY rowid;"
+        "DROP TABLE reservations_before_sr6;"
+        "COMMIT;")

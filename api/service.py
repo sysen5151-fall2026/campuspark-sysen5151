@@ -5,6 +5,7 @@ Each route runs the functions of one use case in the order of the first-level ID
     UC.1 search   F.2 -> X.F.3 (permit system) -> F.3 -> X.F.4 (map service) -> F.3 -> F.4
     UC.1 booking  F.2 -> X.F.3 -> F.5 -> F.6
     UC.2 change   F.1 -> F.7
+    SR.6 cancel   cancel_future_reservation (not yet a function on the IDEF0, see its module)
 
 The mechanisms live here: the approved rules (C.1's RulesStore) and the saved reservations
 (C.5's SQLite store, docs/deployment.md). Nothing in this module decides a rule; every decision is
@@ -15,8 +16,10 @@ import os
 import threading
 import uuid
 from collections import OrderedDict
+from datetime import datetime
 
 from data.reservation_db import SqliteReservationStore
+from functions.cancel_future_reservation import cancel_future_reservation
 from functions.f1_apply_parking_controls import RulesStore, apply_parking_controls
 from functions.f2_validate_trip_eligibility import validate_trip_eligibility
 from functions.f3_gather_lot_location_and_route_data import (
@@ -141,8 +144,29 @@ def find_confirmation(reservation_id, driver_id):
     for record in records():
         if record["reservation_id"] == reservation_id and record["driver_id"] == driver_id:
             guidance = _ready()["guidance"].get(reservation_id) or {}
-            return provide_confirmation_and_route_guidance(record, guidance, approved_rules=approved_rules())
+            confirmation = provide_confirmation_and_route_guidance(record, guidance,
+                                                                   approved_rules=approved_rules())
+            confirmation["status"] = record["status"]
+            return confirmation
     return None
+
+
+def minutes_now():
+    """The server's clock as minutes since midnight. Every booking is for today (docs/SPEC.md)."""
+    now = datetime.now()
+    return now.hour * 60 + now.minute
+
+
+def cancel(reservation_id, driver_id, now=None):
+    """SR.6: the driver cancels a booking that has not started, and its places are released.
+    Returns {"confirmation": the booking, now cancelled} or {"refusal": notice}."""
+    with _lock:
+        record, refusal, _ = cancel_future_reservation(
+            {"reservation_id": reservation_id, "driver_id": driver_id},
+            now=minutes_now() if now is None else now, reservation_store=_ready()["store"])
+    if refusal is not None:
+        return {"refusal": refusal}
+    return {"confirmation": find_confirmation(record["reservation_id"], record["driver_id"])}
 
 
 def change_controls(change):

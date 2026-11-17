@@ -744,6 +744,12 @@ kbd { display: inline-block; font: 600 11px var(--sys); letter-spacing: 0; paddi
 .live .dot { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--amber); box-shadow: 0 0 0 0 rgba(255, 181, 71, .6); animation: live-pulse 2s ease-out infinite; }
 .live[data-state="now"] .dot { background: var(--green); box-shadow: 0 0 0 0 rgba(52, 199, 89, .6); }
 .live[data-state="over"] .dot { background: var(--ink-4); animation: none; }
+.live[data-state="cancelled"] .dot { background: var(--ink-4); animation: none; }
+.pass.cancelled { filter: grayscale(1); opacity: .6; }
+.cancel-zone { margin-top: 12px; }
+.cancel-zone .actions { margin-top: 0; }
+.cancel-ask { text-align: center; color: var(--ink-2); margin: 4px 0 12px; text-shadow: var(--lift); }
+.actions.one { grid-template-columns: 1fr; }
 @keyframes live-pulse { 70% { box-shadow: 0 0 0 9px rgba(255, 181, 71, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 181, 71, 0); } }
 .live .meter { flex: 1; height: 4px; border-radius: 2px; overflow: hidden; background: rgba(255, 255, 255, .12); }
 .live .meter i { display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, var(--green), #7ee2a0); transition: width 1s; }
