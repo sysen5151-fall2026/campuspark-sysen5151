@@ -46,3 +46,20 @@ its own tests, including 100 rounds of 100 concurrent requests for the last plac
 booking route onto it is the open integration step in `docs/deployment.md`.
 
 All of these tests run in `.github/workflows/tests.yml`.
+
+## Cancelling a future booking (SR.6), not yet on the IDEF0
+
+SR.6 Future Booking Cancellation was in the specification from Chapter 3 but had no function in the
+model and no code. It was raised again in TA feedback, so the product now does it. It is kept
+apart from the table above because no first-level function owns it yet; adding it to the IDEF0 of
+F.0 as its own function, performed by C.5 Reservation Subsystem, is the next model change.
+
+| Requirement | Code | Route | Tests |
+| --- | --- | --- | --- |
+| SR.6 Future Booking Cancellation | `functions/cancel_future_reservation.py`; `cancel()` in `data/reservation_db.py` | `POST /api/reservations/{id}/cancel` (row 5b of `docs/route-table.md`) | `tests/test_sr6_cancellation.py`, 26 cases, including the 20-case acceptance criterion from `docs/SPEC.md` |
+
+A cancelled booking keeps its row with status `cancelled`. F.4, F.5 and F.7 already counted only
+`confirmed` records, so none of them changed: the places come back for the booking's whole period as
+soon as the status changes. Only the driver who made the booking can cancel it, a second cancel
+releases nothing more, and a booking that has already started is refused. The Chapter 3 placeholder
+`test_N4_SR6_future_booking_cancellation` stays red with the rest of that suite.

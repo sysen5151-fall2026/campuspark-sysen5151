@@ -84,6 +84,13 @@ REFUSALS = {
     "missing_data": "We couldn't confirm everything a booking needs, so nothing was booked.",
 }
 
+# Why a cancellation was refused (SR.6), in the same plain words.
+CANCEL_REFUSALS = {
+    "already_started": "This booking has already started, so it can't be cancelled here.",
+    "not_found": "No booking with that confirmation number for that driver ID.",
+    "missing_data": "Enter the driver ID the booking was made with.",
+}
+
 
 class OptionsRequest(BaseModel):
     # No defaults on purpose. A missing field used to be filled in for the
@@ -99,6 +106,10 @@ class ReserveRequest(OptionsRequest):
     lot_id: str
     request_id: Optional[str] = None   # one per booking attempt, so a retry adds no second booking
     search_id: Optional[str] = None    # the search whose route guidance the confirmation uses
+
+
+class CancelRequest(BaseModel):
+    driver_id: str
 
 
 class Closure(BaseModel):
@@ -133,7 +144,8 @@ def order_options(options):
 def confirmation_body(c):
     return {"confirmation": c["reservation_id"], "lot": c["lot"], "address": c["address"],
             "start": service.clock(c["start"]), "end": service.clock(c["end"]),
-            "guidance": c["guidance"], "warning": c["warning"], "note": RECORD_NOTE}
+            "guidance": c["guidance"], "warning": c["warning"], "note": RECORD_NOTE,
+            "status": c.get("status", "confirmed")}
 
 
 @app.get("/")
@@ -234,6 +246,16 @@ def find_reservation(reservation_id: str, driver_id: str):
     if found is None:
         return {"error": "No booking with that confirmation number for that driver ID."}
     return confirmation_body(found)
+
+
+@app.post("/api/reservations/{reservation_id}/cancel")
+def cancel_reservation(reservation_id: str, req: CancelRequest):
+    """SR.6: the driver cancels a booking before it starts and its place goes back to the pool."""
+    done = service.cancel(reservation_id.strip().upper(), req.driver_id.strip())
+    if "refusal" in done:
+        reason = done["refusal"]["reason"]
+        return {"error": CANCEL_REFUSALS.get(reason, CANCEL_REFUSALS["missing_data"]), "reason": reason}
+    return confirmation_body(done["confirmation"])
 
 
 @app.get("/api/admin/pools")

@@ -34,5 +34,7 @@ jobs:
         run: python -m pytest tests/test_f5_second_level.py -v
       - name: C.5.3 Capacity Ledger component tests (Chapter 9)
         run: python -m pytest tests/test_c5_3_capacity_ledger.py tests/test_c5_3_promoted_requirements.py -v
+      - name: Future booking cancellation, SR.6
+        run: python -m pytest tests/test_sr6_cancellation.py -v
       - name: Data access and walking skeleton
         run: python -m pytest tests/test_data_access.py tests/test_skeleton.py tests/test_spec_coverage.py -v

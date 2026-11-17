@@ -21,6 +21,6 @@ places in our booking records, never as sensed spaces; every refusal names its r
 
 The pages need network access for the map (MapLibre from unpkg, OpenFreeMap tiles) and the QR code library (cdnjs).
 
-Not done yet: dates (every booking is today), cancellation, a real staff sign-in, and a keyboard and
+Not done yet: dates (every booking is today), a real staff sign-in, and a keyboard and
 screen-reader review for SR.12. The pages use native controls, labels and live regions, which is a
 start, not the review.

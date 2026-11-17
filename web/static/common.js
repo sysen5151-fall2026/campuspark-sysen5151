@@ -32,6 +32,11 @@ export const recent = {
       localStorage.setItem("cp.recent", JSON.stringify(list));
     } catch {}
   },
+  mark(id, status) {
+    try {
+      localStorage.setItem("cp.recent", JSON.stringify(this.all().map(x => x.id === id ? {...x, status} : x)));
+    } catch {}
+  },
 };
 
 // A real aerial photo of the lot: USGS National Map imagery (public domain), cropped around the lot.
